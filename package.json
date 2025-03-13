@@ -1,6 +1,6 @@
 {
   "name": "@cldn/web-ts",
-  "version": "0.0.0",
+  "version": "0.0.0-dev",
   "description": "Class-based Node.js web server",
   "main": "dist/index.js",
   "type": "module",
