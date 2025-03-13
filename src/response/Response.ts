@@ -27,6 +27,13 @@ export abstract class Response {
     }
 
     /**
+     * @internal
+     */
+    public _send(...args: Parameters<Response["send"]>): ReturnType<Response["send"]> {
+        return this.send(...args);
+    }
+
+    /**
      * Set the HTTP response status code and headers.
      */
     protected writeHead(res: http.ServerResponse) {
@@ -38,11 +45,4 @@ export abstract class Response {
      * Called once by the server to send the response.
      */
     protected abstract send(res: http.ServerResponse, server: Server, req?: Request): void | Promise<void>;
-
-    /**
-     * @internal
-     */
-    public _send(...args: Parameters<Response["send"]>): ReturnType<Response["send"]> {
-        return this.send(...args);
-    }
 }

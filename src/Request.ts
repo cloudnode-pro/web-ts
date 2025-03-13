@@ -1,6 +1,6 @@
+import {Multipart} from "multipart-ts";
 import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
-import {Multipart} from "multipart-ts";
 
 /**
  * An incoming HTTP request from a connected client.
@@ -33,7 +33,12 @@ export class Request {
      * @param headers See {@link Request#headers}.
      * @param bodyStream See {@link Request#bodyStream}.
      */
-    protected constructor(method: Request["method"], url: Request["url"], headers: Request["headers"], bodyStream: Request["bodyStream"]) {
+    protected constructor(
+        method: Request["method"],
+        url: Request["url"],
+        headers: Request["headers"],
+        bodyStream: Request["bodyStream"],
+    ) {
         this.method = method;
         this.url = url;
         this.headers = headers;
@@ -45,8 +50,14 @@ export class Request {
      * @throws {@link Request.BadUrlError} If the request URL is invalid.
      */
     public static incomingMessage(incomingMessage: http.IncomingMessage) {
-        const auth = incomingMessage.headers.authorization?.toLowerCase().startsWith("basic ")
-            ? Buffer.from(incomingMessage.headers.authorization.substring("basic ".length), "base64").toString()
+        const auth =
+            incomingMessage.headers.authorization
+                ?.toLowerCase()
+                .startsWith("basic ")
+            ? Buffer.from(
+                incomingMessage.headers.authorization
+                    .substring("basic ".length), "base64"
+            ).toString()
             : null;
 
         const url = `http://${auth ? `${auth}@` : ""}${process.env.HOST ?? "localhost"}${incomingMessage.url ?? "/"}`;
@@ -55,12 +66,21 @@ export class Request {
 
         const headers = Request.headersFromNodeDict(incomingMessage.headers);
 
-        return new Request(
-            incomingMessage.method as Request.Method,
-            new URL(url),
-            headers,
-            incomingMessage
-        )
+        return new Request(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage);
+    }
+
+    /**
+     * @internal
+     */
+    public static headersFromNodeDict(headers: Record<string, OutgoingHttpHeader | undefined>): Headers {
+        return new Headers(Object.entries(headers)
+            .filter((e) => e[1] !== undefined)
+            .flatMap<[string, string]>(([key, value]) =>
+                value instanceof Array
+                ? value.map<[string, string]>(v => [key, v])
+                : [[key, String(value)]]
+            )
+        );
     }
 
     /**
@@ -134,19 +154,6 @@ export class Request {
      */
     public async text(): Promise<string> {
         return (await this.blob()).text();
-    }
-
-    /**
-     * @internal
-     */
-    public static headersFromNodeDict(headers: Record<string, OutgoingHttpHeader | undefined>): Headers {
-        return new Headers(
-            (Object.entries(headers)
-                .filter(([, v]) => v !== undefined) as [string, Exclude<typeof headers[string], undefined>][])
-                .flatMap<[string, string]>(([key, value]) =>value instanceof Array
-                    ? value.map<[string, string]>(v => [key, v])
-                    : [[key, String(value)]])
-        );
     }
 }
 
