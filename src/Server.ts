@@ -1,5 +1,5 @@
 import http from "node:http";
-import packageJson from "../package.json" assert {type: "json"};
+import packageJson from "../package.json" with {type: "json"};
 import {Request} from "./Request.js";
 import {Response} from "./response/Response.js";
 import {RouteRegistry} from "./routing/RouteRegistry.js";
