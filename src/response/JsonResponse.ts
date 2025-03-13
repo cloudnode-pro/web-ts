@@ -17,8 +17,8 @@ export class JsonResponse<T> extends TextResponse {
                 return v.toISOString();
             if (typeof v === "bigint")
                 return v <= BigInt(Number.MAX_SAFE_INTEGER)
-                    ? Number(v)
-                    : v.toString();
+                       ? Number(v)
+                       : v.toString();
             return v;
         }));
     }
