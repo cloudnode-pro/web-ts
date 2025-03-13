@@ -1,3 +1,4 @@
+import {IPAddress, IPv4, IPv6} from "@cldn/ip";
 import {Multipart} from "multipart-ts";
 import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
@@ -27,22 +28,30 @@ export class Request {
     public readonly bodyStream: stream.Readable;
 
     /**
+     * IP address of request sender.
+     */
+    public readonly ip: IPv4 | IPv6;
+
+    /**
      * Construct a new Request.
      * @param method See {@link Request#method}.
      * @param url See {@link Request#url}.
      * @param headers See {@link Request#headers}.
      * @param bodyStream See {@link Request#bodyStream}.
+     * @param ip See {@link Request#ip}.
      */
     protected constructor(
         method: Request["method"],
         url: Request["url"],
         headers: Request["headers"],
         bodyStream: Request["bodyStream"],
+        ip: Request["ip"],
     ) {
         this.method = method;
         this.url = url;
         this.headers = headers;
         this.bodyStream = bodyStream;
+        this.ip = ip;
     }
 
     /**
@@ -66,7 +75,11 @@ export class Request {
 
         const headers = Request.headersFromNodeDict(incomingMessage.headers);
 
-        return new Request(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage);
+        const remoteAddress = incomingMessage.socket.remoteAddress;
+        if (remoteAddress === undefined)
+            throw new Request.SocketClosedError();
+
+        return new Request(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress));
     }
 
     /**
@@ -211,5 +224,14 @@ export namespace Request {
         UNLINK = "UNLINK",
         UNLOCK = "UNLOCK",
         UNSUBSCRIBE = "UNSUBSCRIBE",
+    }
+
+    /**
+     * Socket closed by peer.
+     */
+    export class SocketClosedError extends Error {
+        public constructor() {
+            super("The socker was closed by the peer.");
+        }
     }
 }
