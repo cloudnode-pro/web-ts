@@ -1,0 +1,34 @@
+{
+  "include": [
+    "src/**/*"
+  ],
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig to read more about this file */
+
+    "incremental": true,
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "resolveJsonModule": true,
+    "inlineSourceMap": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "removeComments": false,
+    "importHelpers": true,
+    "importsNotUsedAsValues": "remove",
+    "stripInternal": true,
+    "noEmitOnError": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "skipLibCheck": true
+  }
+}
