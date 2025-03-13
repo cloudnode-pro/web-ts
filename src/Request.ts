@@ -57,6 +57,7 @@ export class Request {
     /**
      * Create a new Request from a Node.js incoming HTTP request.
      * @throws {@link Request.BadUrlError} If the request URL is invalid.
+     * @throws {@link Request.SocketClosedError} If the request socket was closed before the request could be handled.
      */
     public static incomingMessage(incomingMessage: http.IncomingMessage) {
         const auth =
