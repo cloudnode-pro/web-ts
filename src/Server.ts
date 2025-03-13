@@ -47,6 +47,8 @@ class Server {
                 this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL)._send(res, this);
                 return;
             }
+            if (e instanceof Request.SocketClosedError)
+                return;
             throw e;
         }
 

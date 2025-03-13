@@ -35,6 +35,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@cldn/ip": "^1.0.3",
     "multipart-ts": "^1.3.2"
   }
 }
