@@ -56,8 +56,8 @@ class Server {
             throw e;
         }
 
-        for (const header of this.globalHeaders)
-            apiRequest._responseHeaders.set(header[0], header[1]);
+        for (const [key, value] of this.globalHeaders)
+            apiRequest._responseHeaders.set(key, value);
 
         if (this.copyOrigin) {
             apiRequest._responseHeaders.set("access-control-allow-origin", apiRequest.headers.get("Origin") ?? "*");
