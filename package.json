@@ -2,7 +2,7 @@
   "name": "@cldn/web-ts",
   "version": "0.0.0-dev",
   "description": "Class-based Node.js web server",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "type": "module",
   "scripts": {
     "prebuild": "npm run gen:indices",
