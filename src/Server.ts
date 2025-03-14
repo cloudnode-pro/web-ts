@@ -63,8 +63,6 @@ class Server {
             apiRequest._responseHeaders.set("access-control-allow-origin", apiRequest.headers.get("Origin") ?? "*");
             apiRequest._responseHeaders.set("vary", "origin");
         }
-        for (const [key, value] of this.globalHeaders)
-            apiRequest._responseHeaders.set(key, value);
 
         let response: Response;
         try {
