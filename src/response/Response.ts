@@ -36,9 +36,27 @@ export abstract class Response {
     /**
      * Set the HTTP response status code and headers.
      */
-    protected writeHead(res: http.ServerResponse) {
-        res.statusCode = this.statusCode;
-        res.setHeaders(this.headers);
+    protected writeHead(res: http.ServerResponse, server: Server, req?: Request) {
+        const headers = new Headers(this.headers);
+        if (req !== undefined)
+            for (const [key, value] of req._responseHeaders)
+                headers.set(key, value);
+        if (!headers.has("date"))
+            headers.set("date", new Date().toUTCString());
+        if (
+            req === undefined
+            || req.headers.get("connection") === "close"
+            || !res.shouldKeepAlive
+        )
+            headers.set("connection", "close");
+        else {
+            headers.set("connection", "keep-alive");
+            headers.set("keep-alive", "timeout=" + server._keepAliveTimeout);
+        }
+        for (const [key, value] of Array.from(headers.entries())
+            .sort((a, b) => a[0].localeCompare(b[0])))
+            res.setHeader(key, value);
+        res.writeHead(this.statusCode);
     }
 
     /**
