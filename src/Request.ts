@@ -169,6 +169,12 @@ export class Request {
     public async text(): Promise<string> {
         return (await this.blob()).text();
     }
+
+    /**
+     * Response headers that the Response to this request should include.
+     * @internal
+     */
+    public _responseHeaders = new Headers();
 }
 
 export namespace Request {

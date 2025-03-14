@@ -36,8 +36,12 @@ class Server {
         this.server.listen(options.port);
     }
 
+    /** @internal **/
+    public get _keepAliveTimeout() {
+        return this.server.keepAliveTimeout;
+    }
+
     private async listener(req: http.IncomingMessage, res: http.ServerResponse) {
-        res.setHeaders(this.globalHeaders);
         let apiRequest: Request;
         try {
             apiRequest = Request.incomingMessage(req);
@@ -52,11 +56,15 @@ class Server {
             throw e;
         }
 
+        for (const header of this.globalHeaders)
+            apiRequest._responseHeaders.set(header[0], header[1]);
+
         if (this.copyOrigin) {
-            res.appendHeader("Access-Control-Allow-Origin", apiRequest.headers.get("Origin") ?? "*");
-            res.appendHeader("Vary", "Origin");
+            apiRequest._responseHeaders.set("access-control-allow-origin", apiRequest.headers.get("Origin") ?? "*");
+            apiRequest._responseHeaders.set("vary", "origin");
         }
-        res.setHeaders(this.globalHeaders);
+        for (const [key, value] of this.globalHeaders)
+            apiRequest._responseHeaders.set(key, value);
 
         let response: Response;
         try {
