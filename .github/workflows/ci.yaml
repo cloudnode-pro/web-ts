@@ -44,6 +44,7 @@ jobs:
           git config --global user.signingkey "203399718+cloudnode-bot@users.noreply.github.com"
           git config --global user.name "Cloudnode [bot]"
           git config --global user.email "203399718+cloudnode-bot@users.noreply.github.com"
+          git checkout "${GITHUB_REF#refs/heads/}"
           git add "**/index.ts"
           git commit -S -m "chore: update indices"
           git push
