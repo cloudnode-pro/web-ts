@@ -32,6 +32,21 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check uncommitted indices
+        id: uncommitted_indices
+        run: |
+          echo "has_changes=$([ -n "$(git diff --name-only HEAD "**/index.ts")" ] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
+
+      - name: Commit indices
+        if: steps.uncommitted_indices.outputs.has_changes == 'true'
+        run: |
+          echo "${{ secrets.BOT_PGP_KEY }}" | gpg --import --batch
+          git config --global user.name "Cloudnode [bot]"
+          git config --global user.email "203399718+cloudnode-bot@users.noreply.github.com"
+          git add "**/index.ts"
+          git commit -Sm "chore: update indices"
+          git push
+
       - name: Pack
         run: npm pack
 
