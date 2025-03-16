@@ -1,11 +1,12 @@
 import {Response} from "./response/Response.js";
+import {Request} from "./Request.js";
 import {TextResponse} from "./response/TextResponse.js";
 
 /**
  * A registry for server errors.
  */
 class ServerErrorRegistry {
-    private readonly responses: Record<ServerErrorRegistry.ErrorCodes, Response>;
+    private readonly responses: Record<ServerErrorRegistry.ErrorCodes, Response | ((req?: Request) => Response)>;
 
     /**
      * Create a new server error registry initialised with default responses.
@@ -28,13 +29,15 @@ class ServerErrorRegistry {
      * @param code The server error code.
      * @param response The response to send.
      */
-    public register(code: ServerErrorRegistry.ErrorCodes, response: Response) {
+    public register(code: ServerErrorRegistry.ErrorCodes, response: Response | ((req?: Request) => Response)) {
         this.responses[code] = response;
     }
 
     /** @internal */
-    public _get(code: ServerErrorRegistry.ErrorCodes): Response {
-        return this.responses[code];
+    public _get(code: ServerErrorRegistry.ErrorCodes, req: Request | null): Response {
+        const r = this.responses[code];
+        if (typeof r === "function") return r(req ?? void 0);
+        return r;
     }
 }
 
