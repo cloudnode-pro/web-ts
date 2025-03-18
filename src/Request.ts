@@ -33,25 +33,33 @@ export class Request {
     public readonly ip: IPv4 | IPv6;
 
     /**
+     * The {@link Server} from which this request was received.
+     */
+    public readonly server: Server<A>;
+
+    /**
      * Construct a new Request.
      * @param method See {@link Request#method}.
      * @param url See {@link Request#url}.
      * @param headers See {@link Request#headers}.
      * @param bodyStream See {@link Request#bodyStream}.
      * @param ip See {@link Request#ip}.
+     * @param server See {@link Request#server}.
      */
-    protected constructor(
-        method: Request["method"],
-        url: Request["url"],
-        headers: Request["headers"],
-        bodyStream: Request["bodyStream"],
-        ip: Request["ip"],
+    public constructor(
+        method: Request<A>["method"],
+        url: Request<A>["url"],
+        headers: Request<A>["headers"],
+        bodyStream: Request<A>["bodyStream"],
+        ip: Request<A>["ip"],
+        server: Request<A>["server"]
     ) {
         this.method = method;
         this.url = url;
         this.headers = headers;
         this.bodyStream = bodyStream;
         this.ip = ip;
+        this.server = server;
     }
 
     /**
