@@ -106,6 +106,34 @@ export class Request {
     }
 
     /**
+     * Attempt to obtain authorisation for this request with one of the {@link Server}’s {@link Authenticator}s.
+     * @returns `null` if the request lacks authorisation information.
+     */
+    public async getAuthorisation(): Promise<Authorisation<A> | null> {
+        const authenticator = this.server._authenticators.find(a => a.canAuthenticate(this));
+        if (authenticator === undefined) return null;
+        return await authenticator.authenticate(this);
+    }
+
+    /**
+     * Attempt to authenticate this request with one of the {@link Server}’s {@link Authenticator}s.
+     * @returns `null` if the request lacks authorisation information.
+     */
+    public async authenticate(): Promise<AuthenticatedRequest<A> | null> {
+        const authorisation = await this.getAuthorisation();
+        if (authorisation === null) return null;
+        return new AuthenticatedRequest<A>(
+            authorisation,
+            this.method,
+            this.url,
+            this.headers,
+            this.bodyStream,
+            this.ip,
+            this.server,
+        );
+    }
+
+    /**
      * Returns a boolean value that declares whether the body has been read yet.
      */
     public bodyUsed(): boolean {
