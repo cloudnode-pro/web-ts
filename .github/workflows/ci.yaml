@@ -108,7 +108,7 @@ jobs:
   publish:
     name: Publish
     needs: build
-    if: github.event_name == 'release'
+    if: always() && github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
