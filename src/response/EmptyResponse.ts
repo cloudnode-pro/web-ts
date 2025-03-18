@@ -1,12 +1,11 @@
 import http from "node:http";
 import {Request} from "../Request.js";
-import {Server} from "../Server.js";
 import {Response} from "./Response.js";
 
 /**
  * A server response without body (204).
  */
-export class EmptyResponse extends Response {
+export class EmptyResponse<A> extends Response<A> {
     /**
      * Construct a new EmptyResponse.
      * @param [headers] The HTTP response headers to send.
@@ -16,15 +15,10 @@ export class EmptyResponse extends Response {
         super(status, headers);
     }
 
-    /*protected override send(res: http.ServerResponse): void {
-        this.writeHead(res);
-        res.end();
-    }*/
-
-    protected override send(res: http.ServerResponse, server: Server, req?: Request): void {
+    protected override async send(res: http.ServerResponse, req?: Request<A>): Promise<void> {
         if (req !== undefined)
             req._responseHeaders.set("content-length", "0");
-        this.writeHead(res, server, req);
+        this.writeHead(res, req);
         res.end();
     }
 }

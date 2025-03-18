@@ -4,8 +4,8 @@ import {TextResponse} from "./response/TextResponse.js";
 /**
  * A registry for server errors.
  */
-class ServerErrorRegistry {
-    private readonly responses: Record<ServerErrorRegistry.ErrorCodes, Response>;
+class ServerErrorRegistry<A> {
+    private readonly responses: Record<ServerErrorRegistry.ErrorCodes, Response<A>>;
 
     /**
      * Create a new server error registry initialised with default responses.
@@ -28,12 +28,12 @@ class ServerErrorRegistry {
      * @param code The server error code.
      * @param response The response to send.
      */
-    public register(code: ServerErrorRegistry.ErrorCodes, response: Response) {
+    public register(code: ServerErrorRegistry.ErrorCodes, response: Response<A>) {
         this.responses[code] = response;
     }
 
     /** @internal */
-    public _get(code: ServerErrorRegistry.ErrorCodes): Response {
+    public _get(code: ServerErrorRegistry.ErrorCodes): Response<A> {
         return this.responses[code];
     }
 }

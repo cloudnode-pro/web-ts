@@ -2,11 +2,15 @@ import {IPAddress, IPv4, IPv6} from "@cldn/ip";
 import {Multipart} from "multipart-ts";
 import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
+import {Authenticator} from "./auth/Authenticator.js";
+import {Authorisation} from "./auth/Authorisation.js";
+import {AuthenticatedRequest} from "./AuthenticatedRequest.js";
+import {Server} from "./Server.js";
 
 /**
  * An incoming HTTP request from a connected client.
  */
-export class Request {
+export class Request<A> {
     /**
      * The request method.
      */
@@ -67,7 +71,7 @@ export class Request {
      * @throws {@link Request.BadUrlError} If the request URL is invalid.
      * @throws {@link Request.SocketClosedError} If the request socket was closed before the request could be handled.
      */
-    public static incomingMessage(incomingMessage: http.IncomingMessage) {
+    public static incomingMessage<A>(incomingMessage: http.IncomingMessage, server: Server<A>) {
         const auth =
             incomingMessage.headers.authorization
                 ?.toLowerCase()
@@ -88,7 +92,7 @@ export class Request {
         if (remoteAddress === undefined)
             throw new Request.SocketClosedError();
 
-        return new Request(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress));
+        return new Request<A>(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress), server);
     }
 
     /**
