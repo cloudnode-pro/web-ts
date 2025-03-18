@@ -2,5 +2,5 @@
 export * from "./Authenticator.js";
 export * from "./Authorisation.js";
 export * from "./Permissible.js";
-export * from "./Permission.js";
 export * from "./PermissionGroup.js";
+export * from "./Permission.js";
