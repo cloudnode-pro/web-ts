@@ -5,8 +5,8 @@ import {TextResponse} from "./response/TextResponse.js";
 /**
  * A registry for server errors.
  */
-class ServerErrorRegistry {
-    private readonly responses: Record<ServerErrorRegistry.ErrorCodes, Response | ((req?: Request) => Response)>;
+class ServerErrorRegistry<A> {
+    private readonly responses: Record<ServerErrorRegistry.ErrorCodes, Response<A> | ((req?: Request<A>) => Response<A>)>;
 
     /**
      * Create a new server error registry initialised with default responses.
@@ -29,12 +29,12 @@ class ServerErrorRegistry {
      * @param code The server error code.
      * @param response The response to send.
      */
-    public register(code: ServerErrorRegistry.ErrorCodes, response: Response | ((req?: Request) => Response)) {
+    public register(code: ServerErrorRegistry.ErrorCodes, response: Response<A> | ((req?: Request<A>) => Response<A>)) {
         this.responses[code] = response;
     }
 
     /** @internal */
-    public _get(code: ServerErrorRegistry.ErrorCodes, req: Request | null): Response {
+    public _get(code: ServerErrorRegistry.ErrorCodes, req: Request<A> | null): Response<A> {
         const r = this.responses[code];
         if (typeof r === "function") return r(req ?? void 0);
         return r;

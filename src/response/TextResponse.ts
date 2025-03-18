@@ -3,7 +3,7 @@ import {BufferResponse} from "./BufferResponse.js";
 /**
  * An HTTP response with a plain text body.
  */
-export class TextResponse extends BufferResponse {
+export class TextResponse<A> extends BufferResponse<A> {
     /**
      * The plain text body of the response.
      */

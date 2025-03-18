@@ -1,11 +1,12 @@
 import http from "node:http";
 import packageJson from "../package.json" with {type: "json"};
+import {Authenticator} from "./auth/Authenticator.js";
 import {Request} from "./Request.js";
 import {Response} from "./response/Response.js";
 import {RouteRegistry} from "./routing/RouteRegistry.js";
 import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
 
-class Server {
+class Server<A> {
     /**
      * Headers sent with every response.
      */
@@ -13,25 +14,28 @@ class Server {
     /**
      * This server's route registry.
      */
-    public readonly routes = new RouteRegistry();
+    public readonly routes = new RouteRegistry<A>();
     private readonly server: http.Server;
     private readonly copyOrigin: boolean;
-    private readonly errors = new ServerErrorRegistry();
+    private readonly errors = new ServerErrorRegistry<A>();
+    /** @internal */
+    public readonly _authenticators: Authenticator<A>[];
 
     /**
      * Create a new HTTP server.
      * @param options Server options.
      */
-    public constructor(options: Server.Options) {
+    public constructor(options: Server.Options<A>) {
         this.server = http.createServer({
             joinDuplicateHeaders: true,
         }, this.listener.bind(this));
 
         this.globalHeaders = new Headers(options.globalHeaders);
         if (!this.globalHeaders.has("server"))
-            this.globalHeaders.set("Server", `cldn/${packageJson.version}`);
+            this.globalHeaders.set("Server", `${packageJson.name}/${packageJson.version}`);
 
         this.copyOrigin = options.copyOrigin ?? false;
+        this._authenticators = options.authenticators ?? [];
 
         this.server.listen(options.port);
     }
@@ -42,13 +46,13 @@ class Server {
     }
 
     private async listener(req: http.IncomingMessage, res: http.ServerResponse) {
-        let apiRequest: Request;
+        let apiRequest: Request<A>;
         try {
-            apiRequest = Request.incomingMessage(req);
+            apiRequest = Request.incomingMessage(req, this);
         }
         catch (e) {
             if (e instanceof Request.BadUrlError) {
-                this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res, this);
+                await this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res, this);
                 return;
             }
             if (e instanceof Request.SocketClosedError)
@@ -64,7 +68,7 @@ class Server {
             apiRequest._responseHeaders.set("vary", "origin");
         }
 
-        let response: Response;
+        let response: Response<A>;
         try {
             response = await this.routes.handle(apiRequest);
         }
@@ -76,7 +80,7 @@ class Server {
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, apiRequest);
             }
         }
-        response._send(res, this, apiRequest);
+        await response._send(res, apiRequest);
     }
 
     public close(): Promise<void> {
@@ -96,7 +100,7 @@ namespace Server {
     /**
      * Server options
      */
-    export interface Options {
+    export interface Options<A> {
         /**
          * The HTTP listener port. From 1 to 65535. Ports 1–1023 require
          * privileges.
@@ -115,6 +119,11 @@ namespace Server {
          * @default false
          */
         readonly copyOrigin?: boolean;
+
+        /**
+         * Authenticators for handling request authentication.
+         */
+        readonly authenticators?: Authenticator<A>[];
     }
 }
 

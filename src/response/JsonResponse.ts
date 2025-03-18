@@ -1,6 +1,6 @@
 import {TextResponse} from "./TextResponse.js";
 
-export class JsonResponse<T> extends TextResponse {
+export class JsonResponse<T, A> extends TextResponse<A> {
     /**
      * Construct a new JsonResponse.
      * @param json The JSON data to send in the response body.

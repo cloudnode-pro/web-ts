@@ -2,11 +2,15 @@ import {IPAddress, IPv4, IPv6} from "@cldn/ip";
 import {Multipart} from "multipart-ts";
 import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
+import {Authenticator} from "./auth/Authenticator.js";
+import {Authorisation} from "./auth/Authorisation.js";
+import {AuthenticatedRequest} from "./AuthenticatedRequest.js";
+import {Server} from "./Server.js";
 
 /**
  * An incoming HTTP request from a connected client.
  */
-export class Request {
+export class Request<A> {
     /**
      * The request method.
      */
@@ -33,25 +37,33 @@ export class Request {
     public readonly ip: IPv4 | IPv6;
 
     /**
+     * The {@link Server} from which this request was received.
+     */
+    public readonly server: Server<A>;
+
+    /**
      * Construct a new Request.
      * @param method See {@link Request#method}.
      * @param url See {@link Request#url}.
      * @param headers See {@link Request#headers}.
      * @param bodyStream See {@link Request#bodyStream}.
      * @param ip See {@link Request#ip}.
+     * @param server See {@link Request#server}.
      */
-    protected constructor(
-        method: Request["method"],
-        url: Request["url"],
-        headers: Request["headers"],
-        bodyStream: Request["bodyStream"],
-        ip: Request["ip"],
+    public constructor(
+        method: Request<A>["method"],
+        url: Request<A>["url"],
+        headers: Request<A>["headers"],
+        bodyStream: Request<A>["bodyStream"],
+        ip: Request<A>["ip"],
+        server: Request<A>["server"]
     ) {
         this.method = method;
         this.url = url;
         this.headers = headers;
         this.bodyStream = bodyStream;
         this.ip = ip;
+        this.server = server;
     }
 
     /**
@@ -59,7 +71,7 @@ export class Request {
      * @throws {@link Request.BadUrlError} If the request URL is invalid.
      * @throws {@link Request.SocketClosedError} If the request socket was closed before the request could be handled.
      */
-    public static incomingMessage(incomingMessage: http.IncomingMessage) {
+    public static incomingMessage<A>(incomingMessage: http.IncomingMessage, server: Server<A>) {
         const auth =
             incomingMessage.headers.authorization
                 ?.toLowerCase()
@@ -80,7 +92,7 @@ export class Request {
         if (remoteAddress === undefined)
             throw new Request.SocketClosedError();
 
-        return new Request(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress));
+        return new Request<A>(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress), server);
     }
 
     /**
@@ -94,6 +106,34 @@ export class Request {
                 ? value.map<[string, string]>(v => [key, v])
                 : [[key, String(value)]]
             )
+        );
+    }
+
+    /**
+     * Attempt to obtain authorisation for this request with one of the {@link Server}’s {@link Authenticator}s.
+     * @returns `null` if the request lacks authorisation information.
+     */
+    public async getAuthorisation(): Promise<Authorisation<A> | null> {
+        const authenticator = this.server._authenticators.find(a => a.canAuthenticate(this));
+        if (authenticator === undefined) return null;
+        return await authenticator.authenticate(this);
+    }
+
+    /**
+     * Attempt to authenticate this request with one of the {@link Server}’s {@link Authenticator}s.
+     * @returns `null` if the request lacks authorisation information.
+     */
+    public async authenticate(): Promise<AuthenticatedRequest<A> | null> {
+        const authorisation = await this.getAuthorisation();
+        if (authorisation === null) return null;
+        return new AuthenticatedRequest<A>(
+            authorisation,
+            this.method,
+            this.url,
+            this.headers,
+            this.bodyStream,
+            this.ip,
+            this.server,
         );
     }
 
