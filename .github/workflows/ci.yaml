@@ -9,8 +9,65 @@ on:
     types: [published]
 
 jobs:
+  ts-modified:
+    name: TS files changed
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      ts_modified: ${{ steps.check-files.outputs.ts_modified }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 2
+
+      - name: Check for modified .ts files
+        id: check-files
+        run: |
+          if git show --name-only --pretty="" ${{ github.event.pull_request.head.sha }} | grep -E "\.ts$"; then
+            echo "ts_modified=true" >> $GITHUB_OUTPUT
+          else
+            echo "ts_modified=false" >> $GITHUB_OUTPUT
+          fi
+
+  update-indices:
+    name: Update indices
+    needs: ts-modified
+    if: needs.ts-modified.outputs.ts_modified == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.check_changes.outputs.has_changes }}
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.BOT_GH_TOKEN }}
+
+      - name: Generate indices
+        run: ./generateIndices.sh
+
+      - name: Check uncommitted indices
+        id: check_changes
+        run: |
+          echo "has_changes=$([ -n "$(git diff --name-only HEAD "**/index.ts")" ] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
+
+      - name: Commit indices
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          echo "${{ secrets.BOT_PGP_KEY }}" | gpg --import --batch
+          git config --global user.name "Cloudnode [bot]"
+          git config --global user.email "203399718+cloudnode-bot@users.noreply.github.com"
+          git config --global user.signingkey "203399718+cloudnode-bot@users.noreply.github.com"
+          git add "**/index.ts"
+          git commit -S -m "chore: update indices"
+          git push
+
   build:
     name: Build
+    needs: update-indices
+    if: always() && (needs.update-indices.outputs.has_changes == 'false' || needs.update-indices.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,23 +97,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Check uncommitted indices
-        id: uncommitted_indices
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "has_changes=$([ -n "$(git diff --name-only HEAD "**/index.ts")" ] && echo "true" || echo "false")" >> $GITHUB_OUTPUT
-
-      - name: Commit indices
-        if: github.event_name == 'pull_request' && steps.uncommitted_indices.outputs.has_changes == 'true'
-        run: |
-          echo "${{ secrets.BOT_PGP_KEY }}" | gpg --import --batch
-          git config --global user.signingkey "203399718+cloudnode-bot@users.noreply.github.com"
-          git config --global user.name "Cloudnode [bot]"
-          git config --global user.email "203399718+cloudnode-bot@users.noreply.github.com"
-          git add "**/index.ts"
-          git commit -S -m "chore: update indices"
-          git push
-
       - name: Pack
         run: npm pack
 
@@ -68,7 +108,7 @@ jobs:
   publish:
     name: Publish
     needs: build
-    if: github.event_name == 'release'
+    if: always() && github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
