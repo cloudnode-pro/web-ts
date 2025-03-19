@@ -77,7 +77,19 @@ class Server {
             }
         }
         response._send(res, this, apiRequest);
-    };
+    }
+
+    public close(): Promise<void> {
+        return Promise.race([
+            new Promise<void>(resolve => {
+                this.server.close(() => resolve());
+            }),
+            new Promise<void>(resolve => setTimeout(() => {
+                this.server.closeAllConnections();
+                resolve();
+            }, 5000)),
+        ]);
+    }
 }
 
 namespace Server {
