@@ -16,7 +16,7 @@ class Server {
     public readonly routes = new RouteRegistry();
     private readonly server: http.Server;
     private readonly copyOrigin: boolean;
-    private readonly errors = new ServerErrorRegistry();
+    public readonly errors = new ServerErrorRegistry();
 
     /**
      * Create a new HTTP server.
