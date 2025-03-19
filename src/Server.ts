@@ -16,6 +16,10 @@ class Server {
     public readonly routes = new RouteRegistry();
     private readonly server: http.Server;
     private readonly copyOrigin: boolean;
+
+    /**
+     * This server's error registry.
+     */
     public readonly errors = new ServerErrorRegistry();
 
     /**
