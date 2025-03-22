@@ -9,6 +9,7 @@ export class JsonResponse<T, A> extends TextResponse<A> {
      */
     public constructor(json: T, statusCode = 200, headers?: HeadersInit) {
         super(JsonResponse.serialise(json), statusCode, headers);
+        this.headers.set("content-type", "application/json");
     }
 
     protected static serialise(value: any): string {
