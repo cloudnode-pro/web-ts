@@ -52,7 +52,7 @@ class Server {
         }
         catch (e) {
             if (e instanceof Request.BadUrlError) {
-                this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL)._send(res, this);
+                this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res, this);
                 return;
             }
             if (e instanceof Request.SocketClosedError)
@@ -74,10 +74,10 @@ class Server {
         }
         catch (e) {
             if (e instanceof RouteRegistry.NoRouteError)
-                response = this.errors._get(ServerErrorRegistry.ErrorCodes.NO_ROUTE);
+                response = this.errors._get(ServerErrorRegistry.ErrorCodes.NO_ROUTE, apiRequest);
             else {
                 console.error("Internal Server Error:", e);
-                response = this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL);
+                response = this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, apiRequest);
             }
         }
         response._send(res, this, apiRequest);
