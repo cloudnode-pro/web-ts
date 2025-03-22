@@ -17,7 +17,11 @@ class Server<A> {
     public readonly routes = new RouteRegistry<A>();
     private readonly server: http.Server;
     private readonly copyOrigin: boolean;
-    private readonly errors = new ServerErrorRegistry<A>();
+
+    /**
+     * This server's error registry.
+     */
+    public readonly errors = new ServerErrorRegistry<A>();
     /** @internal */
     public readonly _authenticators: Authenticator<A>[];
 
@@ -79,9 +83,21 @@ class Server<A> {
                 console.error("Internal Server Error:", e);
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL);
             }
-        }
+        }  
         await response._send(res, apiRequest);
     };
+
+    public close(): Promise<void> {
+        return Promise.race([
+            new Promise<void>(resolve => {
+                this.server.close(() => resolve());
+            }),
+            new Promise<void>(resolve => setTimeout(() => {
+                this.server.closeAllConnections();
+                resolve();
+            }, 5000)),
+        ]);
+    }
 }
 
 namespace Server {
