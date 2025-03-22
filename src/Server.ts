@@ -16,7 +16,11 @@ class Server {
     public readonly routes = new RouteRegistry();
     private readonly server: http.Server;
     private readonly copyOrigin: boolean;
-    private readonly errors = new ServerErrorRegistry();
+
+    /**
+     * This server's error registry.
+     */
+    public readonly errors = new ServerErrorRegistry();
 
     /**
      * Create a new HTTP server.
@@ -77,7 +81,19 @@ class Server {
             }
         }
         response._send(res, this, apiRequest);
-    };
+    }
+
+    public close(): Promise<void> {
+        return Promise.race([
+            new Promise<void>(resolve => {
+                this.server.close(() => resolve());
+            }),
+            new Promise<void>(resolve => setTimeout(() => {
+                this.server.closeAllConnections();
+                resolve();
+            }, 5000)),
+        ]);
+    }
 }
 
 namespace Server {
