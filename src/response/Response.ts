@@ -1,4 +1,5 @@
 import http from "node:http";
+import {Cookie} from "../Cookie.js";
 import {Request} from "../Request.js";
 import {Server} from "../Server.js";
 
@@ -24,6 +25,14 @@ export abstract class Response {
     protected constructor(statusCode: Response["statusCode"], headers: HeadersInit = {}) {
         this.statusCode = statusCode;
         this.headers = new Headers(headers);
+    }
+
+    /**
+     * Set a response cookie.
+     * @param cookie The cookie to set.
+     */
+    public setCookie(cookie: Cookie) {
+        this.headers.append("set-cookie", cookie.serialise());
     }
 
     /**
