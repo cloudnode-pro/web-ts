@@ -50,7 +50,7 @@ class Cookie implements Cookie.CookieOptions {
      * @param value The value of this cookie.
      * @param options Cookie options.
      */
-    public constructor(name: string, value: string, options?: Cookie.CookieOptions) {
+    public constructor(name: string, value: string, options?: Partial<Cookie.CookieOptions>) {
         if (!Cookie.TOKEN.test(name))
             throw new SyntaxError(`Cookie name "${name}" is not a valid "token" as per RFC 2616, Section 2.2.`);
         if (!Cookie.COOKIE_OCTET.test(value))
