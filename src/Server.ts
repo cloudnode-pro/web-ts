@@ -100,19 +100,17 @@ class Server {
             if (etag === null && lastModified === null)
                 break conditional;
 
-            if ((
-                req.headers.has("if-match")
-                && !this.getETags(req.headers.get("if-match")!)
-                    .filter(t => !t.startsWith("W/"))
-                    .includes(etag!)
-            )
-            || (
-                req.headers.has("if-unmodified-since")
+            if (req.headers.has("if-match") && !this.getETags(req.headers.get("if-match")!)
+                .filter(t => !t.startsWith("W/"))
+                .includes(etag!))
+                return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
+
+            if (req.headers.has("if-unmodified-since")
                 && (
                     lastModified === null
                     || lastModified.getTime() > new Date(req.headers.get("if-unmodified-since")!).getTime()
-                )
-            )) return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
+                ))
+                return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
             
             if ((
                 etag !== null
