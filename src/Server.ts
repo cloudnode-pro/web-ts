@@ -38,7 +38,7 @@ class Server {
             this.globalHeaders.set("Server", `cldn/${packageJson.version}`);
 
         this.copyOrigin = options.copyOrigin ?? false;
-        this.handleConditionalRequests = options.handleConditionalRequests ?? false;
+        this.handleConditionalRequests = options.handleConditionalRequests ?? true;
 
         this.server.listen(options.port);
     }
