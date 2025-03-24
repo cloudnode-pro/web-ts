@@ -9,7 +9,7 @@ export abstract class Response {
     /**
      * The HTTP response status code to send.
      */
-    protected readonly statusCode: number;
+    public readonly statusCode: number;
 
     /**
      * The HTTP response headers to send.
@@ -34,9 +34,10 @@ export abstract class Response {
     }
 
     /**
-     * Set the HTTP response status code and headers.
+     * All (final) headers to send to the client.
+     * @internal
      */
-    protected writeHead(res: http.ServerResponse, server: Server, req?: Request) {
+    public allHeaders(res: http.ServerResponse, server: Server, req?: Request) {
         const headers = new Headers(this.headers);
         if (req !== undefined)
             for (const [key, value] of req._responseHeaders)
@@ -53,6 +54,14 @@ export abstract class Response {
             headers.set("connection", "keep-alive");
             headers.set("keep-alive", "timeout=" + server._keepAliveTimeout);
         }
+        return headers;
+    }
+
+    /**
+     * Set the HTTP response status code and headers.
+     */
+    protected writeHead(res: http.ServerResponse, server: Server, req?: Request) {
+        const headers = this.allHeaders(res, server, req);
         for (const [key, value] of Array.from(headers.entries())
             .sort((a, b) => a[0].localeCompare(b[0])))
             res.setHeader(key, value);
