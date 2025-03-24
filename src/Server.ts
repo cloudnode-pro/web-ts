@@ -1,6 +1,7 @@
 import http from "node:http";
 import packageJson from "../package.json" with {type: "json"};
 import {Request} from "./Request.js";
+import {EmptyResponse} from "./response/index.js";
 import {Response} from "./response/Response.js";
 import {RouteRegistry} from "./routing/RouteRegistry.js";
 import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
@@ -16,6 +17,7 @@ class Server {
     public readonly routes = new RouteRegistry();
     private readonly server: http.Server;
     private readonly copyOrigin: boolean;
+    private readonly handleConditionalRequests: boolean;
 
     /**
      * This server's error registry.
@@ -36,6 +38,7 @@ class Server {
             this.globalHeaders.set("Server", `cldn/${packageJson.version}`);
 
         this.copyOrigin = options.copyOrigin ?? false;
+        this.handleConditionalRequests = options.handleConditionalRequests ?? true;
 
         this.server.listen(options.port);
     }
@@ -80,7 +83,53 @@ class Server {
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, apiRequest);
             }
         }
-        response._send(res, this, apiRequest);
+        await this.sendResponse(response, res, apiRequest);
+    }
+
+    private async sendResponse(response: Response, res: http.ServerResponse, req: Request): Promise<void> {
+        conditional: if (
+            this.handleConditionalRequests
+            && response.statusCode === 200
+            && [Request.Method.GET, Request.Method.HEAD].includes(req.method)
+        ) {
+            const responseHeaders = response.allHeaders(res, this, req);
+            const etag = responseHeaders.get("etag");
+            const lastModified = responseHeaders.has("last-modified")
+                ? new Date(responseHeaders.get("last-modified")!)
+                : null;
+            if (etag === null && lastModified === null)
+                break conditional;
+
+            if (req.headers.has("if-match")) {
+                if (!this.getETags(req.headers.get("if-match")!)
+                    .filter(t => !t.startsWith("W/"))
+                    .includes(etag!))
+                    return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
+            }
+            else if (req.headers.has("if-unmodified-since")) {
+                if (lastModified === null
+                    || lastModified.getTime() > new Date(req.headers.get("if-unmodified-since")!).getTime())
+                    return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
+            }
+
+            if (req.headers.has("if-none-match")) {
+                if (this.getETags(req.headers.get("if-none-match")!)
+                    .includes(etag!))
+                    return new EmptyResponse(responseHeaders, 304)._send(res, this, req);
+            }
+            else if (req.headers.has("if-modified-since")) {
+                if (lastModified !== null
+                    && lastModified.getTime() <= new Date(req.headers.get("if-modified-since")!).getTime())
+                    return new EmptyResponse(responseHeaders, 304)._send(res, this, req);
+            }
+        }
+        response._send(res, this, req);
+    }
+
+    private getETags(header: string) {
+        return header
+            .split(",")
+            .map(t => t.trim())
     }
 
     public close(): Promise<void> {
@@ -119,6 +168,13 @@ namespace Server {
          * @default false
          */
         readonly copyOrigin?: boolean;
+
+        /**
+         * Automatically handle conditional requests for GET and HEAD requests that result in a 200 status code.
+         * `If-Range` headers are ignored.
+         * @default true
+         */
+        readonly handleConditionalRequests?: boolean;
     }
 }
 
