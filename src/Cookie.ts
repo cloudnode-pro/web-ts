@@ -32,7 +32,7 @@ class Cookie implements Cookie.CookieOptions {
     public readonly maxAge?: number;
     public readonly partitioned: boolean;
     public readonly path?: string;
-    public readonly sameSite: Cookie.SameSite;
+    public readonly sameSite?: Cookie.SameSite;
     public readonly secure: boolean;
 
     /**
@@ -63,7 +63,7 @@ class Cookie implements Cookie.CookieOptions {
         this.maxAge = options?.maxAge;
         this.partitioned = options?.partitioned ?? false;
         this.path = options?.path;
-        this.sameSite = options?.sameSite ?? Cookie.SameSite.STRICT;
+        this.sameSite = options?.sameSite;
         this.secure = options?.secure ?? false;
     }
 
