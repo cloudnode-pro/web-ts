@@ -54,7 +54,7 @@ class Cookie implements Cookie.CookieOptions {
         if (!Cookie.TOKEN.test(name))
             throw new SyntaxError(`Cookie name "${name}" is not a valid "token" as per RFC 2616, Section 2.2.`);
         if (!Cookie.COOKIE_OCTET.test(value))
-            throw new SyntaxError(`Cookie "${name}" value "${value}" is not a valid "*cookie-octet" as per RFC 6265, Section 4.1.1.`);
+            throw new SyntaxError(`In cookie "${name}", value "${value}" is not a valid "*cookie-octet" as per RFC 6265, Section 4.1.1.`);
         this.name = name;
         this.value = value;
         this.domain = options?.domain;
