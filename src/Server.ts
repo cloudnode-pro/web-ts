@@ -56,7 +56,7 @@ class Server<A> {
         }
         catch (e) {
             if (e instanceof Request.BadUrlError) {
-                await this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res, this);
+                await this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res);
                 return;
             }
             if (e instanceof Request.SocketClosedError)
