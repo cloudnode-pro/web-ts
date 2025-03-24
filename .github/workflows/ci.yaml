@@ -16,7 +16,7 @@ jobs:
     outputs:
       ts_modified: ${{ steps.check-files.outputs.ts_modified }}
     steps:
-      - name: Checkout repository
+      - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
@@ -67,19 +67,11 @@ jobs:
   build:
     name: Build
     needs: update-indices
-    if: always() && (needs.update-indices.outputs.has_changes == 'false' || needs.update-indices.result == 'skipped')
+    if: always() && (needs.update-indices.result == 'skipped' || needs.update-indices.outputs.has_changes == 'false')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        if: github.event_name != 'pull_request'
         uses: actions/checkout@v4
-
-      - name: Checkout PR branch
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          token: ${{ secrets.BOT_GH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
