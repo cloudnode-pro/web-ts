@@ -33,21 +33,21 @@ class Server extends EventEmitter<Server.Events> {
      * Create a new HTTP server.
      * @param options Server options.
      */
-    public constructor(options: Server.Options) {
+    public constructor(options?: Server.Options) {
         super();
         this.server = http.createServer({
             joinDuplicateHeaders: true,
         }, this.listener.bind(this));
 
-        this.globalHeaders = new Headers(options.globalHeaders);
+        this.globalHeaders = new Headers(options?.globalHeaders);
         if (!this.globalHeaders.has("server"))
             this.globalHeaders.set("Server", `cldn/${packageJson.version}`);
 
-        this.port = options.port;
-        this.copyOrigin = options.copyOrigin ?? false;
-        this.handleConditionalRequests = options.handleConditionalRequests ?? true;
+        this.port = options?.port;
+        this.copyOrigin = options?.copyOrigin ?? false;
+        this.handleConditionalRequests = options?.handleConditionalRequests ?? true;
 
-        if (this.port !== undefined) this.listen(this.port);
+        if (this.port !== undefined) this.listen(this.port).then();
 
         this.once("listening", () => {
             if (this.listenerCount("error") === 0)
@@ -87,10 +87,15 @@ class Server extends EventEmitter<Server.Events> {
     /**
      * Start listening for connections.
      */
-    public listen(port: number) {
+    public listen(port: number): Promise<void> {
         if (this.server.listening)
             throw new Error("Server is already listening.");
-        this.server.listen(port, process.env.HOST, () => this.emit("listening"));
+        return new Promise(resolve => {
+            this.server.listen(port, process.env.HOST, () => {
+                this.emit("listening", port, process.env.HOST);
+                resolve();
+            });
+        });
     }
 
     private async listener(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -185,9 +190,9 @@ namespace Server {
     export interface Options {
         /**
          * The HTTP listener port. From 1 to 65535. Ports 1–1023 require
-         * privileges.
+         * privileges. If not set, {@link Server#listen|Server.listen()} must be called manually.
          */
-        readonly port: number;
+        readonly port?: number;
 
         /**
          * Headers to send with every response.
@@ -217,7 +222,7 @@ namespace Server {
         /**
          * Server is listening and ready to accept connections.
          */
-        listening: [void];
+        listening: [port: number, host?: string];
 
         /**
          * The server is closing and not accepting new connections.
