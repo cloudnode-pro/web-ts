@@ -1,3 +1,4 @@
+import EventEmitter from "node:events";
 import http from "node:http";
 import packageJson from "../package.json" with {type: "json"};
 import {Request} from "./Request.js";
@@ -6,7 +7,11 @@ import {Response} from "./response/Response.js";
 import {RouteRegistry} from "./routing/RouteRegistry.js";
 import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
 
-class Server {
+/**
+ * An HTTP server.
+ * @see {@link Server.Events} for events.
+ */
+class Server extends EventEmitter<Server.Events> {
     /**
      * Headers sent with every response.
      */
@@ -29,6 +34,7 @@ class Server {
      * @param options Server options.
      */
     public constructor(options: Server.Options) {
+        super();
         this.server = http.createServer({
             joinDuplicateHeaders: true,
         }, this.listener.bind(this));
@@ -40,7 +46,12 @@ class Server {
         this.copyOrigin = options.copyOrigin ?? false;
         this.handleConditionalRequests = options.handleConditionalRequests ?? true;
 
-        this.server.listen(options.port);
+        this.server.listen(options.port, process.env.HOST, () => this.emit("listening"));
+
+        this.once("listening", () => {
+            if (this.listenerCount("error") === 0)
+                this.on("error", e => console.error("Internal Server Error:", e));
+        });
     }
 
     /** @internal **/
@@ -79,7 +90,7 @@ class Server {
             if (e instanceof RouteRegistry.NoRouteError)
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.NO_ROUTE, apiRequest);
             else {
-                console.error("Internal Server Error:", e);
+                this.emit("error", e as any);
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, apiRequest);
             }
         }
@@ -132,8 +143,9 @@ class Server {
             .map(t => t.trim())
     }
 
-    public close(): Promise<void> {
-        return Promise.race([
+    public async close(): Promise<void> {
+        this.emit("closing");
+        await Promise.race([
             new Promise<void>(resolve => {
                 this.server.close(() => resolve());
             }),
@@ -142,6 +154,7 @@ class Server {
                 resolve();
             }, 5000)),
         ]);
+        this.emit("closed");
     }
 }
 
@@ -175,6 +188,31 @@ namespace Server {
          * @default true
          */
         readonly handleConditionalRequests?: boolean;
+    }
+
+    /**
+     * Server events map
+     */
+    export interface Events {
+        /**
+         * Server is listening and ready to accept connections.
+         */
+        listening: [void];
+
+        /**
+         * The server is closing and not accepting new connections.
+         */
+        closing: [void];
+
+        /**
+         * All connections have ended and the server has closed.
+         */
+        closed: [void];
+
+        /**
+         * An uncaught error occurred. Client has been sent {@link ServerErrorRegistry.ErrorCodes.INTERNAL} error.
+         */
+        error: [Error];
     }
 }
 
