@@ -20,14 +20,13 @@ class Server extends EventEmitter<Server.Events> {
      * This server's route registry.
      */
     public readonly routes = new RouteRegistry();
-    private readonly server: http.Server;
-    private readonly copyOrigin: boolean;
-    private readonly handleConditionalRequests: boolean;
-
     /**
      * This server's error registry.
      */
     public readonly errors = new ServerErrorRegistry();
+    private readonly server: http.Server;
+    private readonly copyOrigin: boolean;
+    private readonly handleConditionalRequests: boolean;
 
     /**
      * Create a new HTTP server.
@@ -57,6 +56,20 @@ class Server extends EventEmitter<Server.Events> {
     /** @internal **/
     public get _keepAliveTimeout() {
         return this.server.keepAliveTimeout;
+    }
+
+    public async close(): Promise<void> {
+        this.emit("closing");
+        await Promise.race([
+            new Promise<void>(resolve => {
+                this.server.close(() => resolve());
+            }),
+            new Promise<void>(resolve => setTimeout(() => {
+                this.server.closeAllConnections();
+                resolve();
+            }, 5000)),
+        ]);
+        this.emit("closed");
     }
 
     private async listener(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -141,20 +154,6 @@ class Server extends EventEmitter<Server.Events> {
         return header
             .split(",")
             .map(t => t.trim())
-    }
-
-    public async close(): Promise<void> {
-        this.emit("closing");
-        await Promise.race([
-            new Promise<void>(resolve => {
-                this.server.close(() => resolve());
-            }),
-            new Promise<void>(resolve => setTimeout(() => {
-                this.server.closeAllConnections();
-                resolve();
-            }, 5000)),
-        ]);
-        this.emit("closed");
     }
 }
 
