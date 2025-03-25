@@ -210,6 +210,8 @@ namespace Server {
 
         /**
          * An uncaught error occurred. Client has been sent {@link ServerErrorRegistry.ErrorCodes.INTERNAL} error.
+         * If no listener is registered when the server begins listening for the first time, a default listener will be
+         * added to direct errors to stderr.
          */
         error: [Error];
     }
