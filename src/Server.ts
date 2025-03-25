@@ -58,7 +58,11 @@ class Server extends EventEmitter<Server.Events> {
         return this.server.keepAliveTimeout;
     }
 
-    public async close(): Promise<void> {
+    /**
+     * Close the server. Will stop accepting new connections and wait for existing connections to close.
+     * @param [timeout=5000] Maximum time to wait for existing connections to close before forcibly closing them.
+     */
+    public async close(timeout = 5000): Promise<void> {
         this.emit("closing");
         await Promise.race([
             new Promise<void>(resolve => {
@@ -67,7 +71,7 @@ class Server extends EventEmitter<Server.Events> {
             new Promise<void>(resolve => setTimeout(() => {
                 this.server.closeAllConnections();
                 resolve();
-            }, 5000)),
+            }, timeout)),
         ]);
         this.emit("closed");
     }
