@@ -63,6 +63,8 @@ class Server extends EventEmitter<Server.Events> {
      * @param [timeout=5000] Maximum time to wait for existing connections to close before forcibly closing them.
      */
     public async close(timeout = 5000): Promise<void> {
+        if (!this.server.listening)
+            throw new Error("Server is not listening.");
         this.emit("closing");
         let timeoutId: NodeJS.Timeout;
         await Promise.race([
