@@ -64,14 +64,18 @@ class Server extends EventEmitter<Server.Events> {
      */
     public async close(timeout = 5000): Promise<void> {
         this.emit("closing");
+        let timeoutId: NodeJS.Timeout;
         await Promise.race([
             new Promise<void>(resolve => {
+                timeoutId = setTimeout(() => {
+                    this.server.closeAllConnections();
+                    resolve();
+                }, timeout)
+            }),
+            new Promise<void>(resolve => {
+                clearTimeout(timeoutId);
                 this.server.close(() => resolve());
             }),
-            new Promise<void>(resolve => setTimeout(() => {
-                this.server.closeAllConnections();
-                resolve();
-            }, timeout)),
         ]);
         this.emit("closed");
     }
