@@ -25,6 +25,7 @@ class Server extends EventEmitter<Server.Events> {
      */
     public readonly errors = new ServerErrorRegistry();
     private readonly server: http.Server;
+    private readonly port?: number;
     private readonly copyOrigin: boolean;
     private readonly handleConditionalRequests: boolean;
 
@@ -42,10 +43,11 @@ class Server extends EventEmitter<Server.Events> {
         if (!this.globalHeaders.has("server"))
             this.globalHeaders.set("Server", `cldn/${packageJson.version}`);
 
+        this.port = options.port;
         this.copyOrigin = options.copyOrigin ?? false;
         this.handleConditionalRequests = options.handleConditionalRequests ?? true;
 
-        this.server.listen(options.port, process.env.HOST, () => this.emit("listening"));
+        if (this.port !== undefined) this.listen(this.port);
 
         this.once("listening", () => {
             if (this.listenerCount("error") === 0)
@@ -80,6 +82,15 @@ class Server extends EventEmitter<Server.Events> {
             }),
         ]);
         this.emit("closed");
+    }
+
+    /**
+     * Start listening for connections.
+     */
+    public listen(port: number) {
+        if (this.server.listening)
+            throw new Error("Server is already listening.");
+        this.server.listen(port, process.env.HOST, () => this.emit("listening"));
     }
 
     private async listener(req: http.IncomingMessage, res: http.ServerResponse) {
