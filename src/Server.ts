@@ -86,6 +86,7 @@ class Server extends EventEmitter<Server.Events> {
 
     /**
      * Start listening for connections.
+     * @param port The HTTP listener port. From 1 to 65535. Ports 1–1023 require privileges.
      */
     public listen(port: number): Promise<void> {
         if (this.server.listening)
