@@ -7,7 +7,7 @@ generate_indices() {
   local index_file="$dir/index.ts"
 
   local -a ts_files
-  mapfile -t ts_files < <(find "$dir" -maxdepth 1 -type f -name "*.ts" ! -name "index.ts" | sort)
+  mapfile -t ts_files < <(find "$dir" -maxdepth 1 -type f -name "*.ts" ! -name "index.ts" | LC_ALL=C sort)
   if [[ ${#ts_files[@]} -eq 0 ]]; then
     return
   fi
@@ -22,7 +22,7 @@ generate_indices() {
   done
 
   local -a subdirs
-  mapfile -t subdirs < <(find "$dir" -mindepth 1 -maxdepth 1 -type d | sort)
+  mapfile -t subdirs < <(find "$dir" -mindepth 1 -maxdepth 1 -type d | LC_ALL=C sort)
   for subdir in "${subdirs[@]}"; do
     generate_indices "$subdir"
   done

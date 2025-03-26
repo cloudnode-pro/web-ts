@@ -1,4 +1,5 @@
 import http from "node:http";
+import {Cookie} from "../Cookie.js";
 import {Request} from "../Request.js";
 
 /**
@@ -8,7 +9,7 @@ export abstract class Response<A> {
     /**
      * The HTTP response status code to send.
      */
-    protected readonly statusCode: number;
+    public readonly statusCode: number;
 
     /**
      * The HTTP response headers to send.
@@ -26,6 +27,14 @@ export abstract class Response<A> {
     }
 
     /**
+     * Set a response cookie.
+     * @param cookie The cookie to set.
+     */
+    public setCookie(cookie: Cookie) {
+        this.headers.append("set-cookie", cookie.serialise());
+    }
+
+    /**
      * @internal
      */
     public _send(...args: Parameters<Response<A>["send"]>): ReturnType<Response<A>["send"]> {
@@ -33,9 +42,10 @@ export abstract class Response<A> {
     }
 
     /**
-     * Set the HTTP response status code and headers.
+     * All (final) headers to send to the client.
+     * @internal
      */
-    protected writeHead(res: http.ServerResponse, req?: Request<A>) {
+    public allHeaders(res: http.ServerResponse, req?: Request<A>) {
         const headers = new Headers(this.headers);
         if (req !== undefined)
             for (const [key, value] of req._responseHeaders)
@@ -53,6 +63,14 @@ export abstract class Response<A> {
             headers.set("keep-alive", "timeout=" + req.server._keepAliveTimeout);
         }
 
+        return headers;
+    }
+
+    /**
+     * Set the HTTP response status code and headers.
+     */
+    protected writeHead(res: http.ServerResponse, req?: Request<A>) {
+        const headers = this.allHeaders(res, req);
         for (const [key, value] of Array.from(headers.entries())
             .sort(([a], [b]) => a.localeCompare(b)))
             res.setHeader(key, value);

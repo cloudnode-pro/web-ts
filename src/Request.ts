@@ -42,6 +42,11 @@ export class Request<A> {
     public readonly server: Server<A>;
 
     /**
+     * The parsed request cookies from the {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie|Cookie} request header.
+     */
+    public readonly cookies: ReadonlyMap<string, string>;
+
+    /**
      * Construct a new Request.
      * @param method See {@link Request#method}.
      * @param url See {@link Request#url}.
@@ -64,6 +69,22 @@ export class Request<A> {
         this.bodyStream = bodyStream;
         this.ip = ip;
         this.server = server;
+
+        this.cookies = new Map(
+            this.headers.get("cookie")
+                ?.split("; ")
+                .map(cookie => {
+                    const separatorIndex = cookie.indexOf("=");
+                    if (separatorIndex < 1)
+                        return null;
+                    const name = cookie.substring(0, separatorIndex);
+                    const value = cookie.substring(separatorIndex + 1);
+                    if (value.startsWith("\"") && value.endsWith("\""))
+                        return [name, value.substring(1, value.length - 1)];
+                    return [name, value];
+                })
+                .filter((cookie): cookie is [string, string] => cookie !== null)
+        )
     }
 
     /**

@@ -21,6 +21,9 @@ class ServerErrorRegistry<A> {
 
             [ServerErrorRegistry.ErrorCodes.INTERNAL]:
                 new TextResponse("An internal error occurred.", 500),
+
+            [ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED]:
+                new TextResponse("Precondition failed.", 412),
         };
     }
 
@@ -49,6 +52,7 @@ namespace ServerErrorRegistry {
         BAD_URL,
         NO_ROUTE,
         INTERNAL,
+        PRECONDITION_FAILED,
     }
 }
 
