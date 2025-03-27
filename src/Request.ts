@@ -4,7 +4,7 @@ import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
 import {Authenticator} from "./auth/Authenticator.js";
 import {Authorisation} from "./auth/Authorisation.js";
-import {AuthenticatedRequest} from "./AuthenticatedRequest.js";
+import {AuthenticatedRequest} from "./auth/AuthenticatedRequest.js";
 import {Server} from "./Server.js";
 
 /**

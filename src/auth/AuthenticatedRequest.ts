@@ -1,7 +1,7 @@
-import {Authorisation} from "./auth/Authorisation.js";
-import {Permissible} from "./auth/Permissible.js";
-import {Permission} from "./auth/Permission.js";
-import {Request} from "./Request.js";
+import {Authorisation} from "./Authorisation.js";
+import {Permissible} from "./Permissible.js";
+import {Permission} from "./Permission.js";
+import {Request} from "../Request.js";
 
 /**
  * A request with available {@link Authorisation}.
