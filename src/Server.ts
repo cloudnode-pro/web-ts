@@ -83,9 +83,13 @@ class Server extends EventEmitter<Server.Events> {
                 this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res, this);
                 return;
             }
+
             if (e instanceof Request.SocketClosedError)
                 return;
-            throw e;
+
+            this.emit("error", e as any);
+            this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, null)._send(res, this);
+            return;
         }
 
         for (const [key, value] of this.globalHeaders)
