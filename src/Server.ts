@@ -4,6 +4,7 @@ import packageJson from "../package.json" with {type: "json"};
 import {Request} from "./Request.js";
 import {EmptyResponse} from "./response/index.js";
 import {Response} from "./response/Response.js";
+import {ThrowableResponse} from "./response/ThrowableResponse.js";
 import {RouteRegistry} from "./routing/RouteRegistry.js";
 import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
 
@@ -100,7 +101,13 @@ class Server extends EventEmitter<Server.Events> {
             response = await this.routes.handle(apiRequest);
         }
         catch (e) {
-            if (e instanceof RouteRegistry.NoRouteError)
+            if (e instanceof ThrowableResponse) {
+                response = e.getResponse();
+                const cause = e.getError();
+                if (cause !== null)
+                    this.emit("error", cause);
+            }
+            else if (e instanceof RouteRegistry.NoRouteError)
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.NO_ROUTE, apiRequest);
             else {
                 this.emit("error", e as any);
