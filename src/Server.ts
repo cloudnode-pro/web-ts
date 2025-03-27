@@ -95,7 +95,7 @@ class Server<A> extends EventEmitter<Server.Events> {
                 return;
 
             this.emit("error", e as any);
-            this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, null)._send(res, this);
+            await this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, null)._send(res);
             return;
         }
 

@@ -3,7 +3,7 @@ import {Response} from "./Response.js";
 /**
  * An (error) response that is thrown. Will be caught by the server and sent to the client.
  */
-export class ThrowableResponse<T extends Response> extends Error {
+export class ThrowableResponse<T extends Response<any>> extends Error {
     public override name = ThrowableResponse.name;
 
     /**

@@ -24,6 +24,9 @@ class ServerErrorRegistry<A> {
 
             [ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED]:
                 new TextResponse("Precondition failed.", 412),
+
+            [ServerErrorRegistry.ErrorCodes.NO_PERMISSION]:
+                new TextResponse("You do not have permission to perform this action.", 403),
         };
     }
 
@@ -53,6 +56,7 @@ namespace ServerErrorRegistry {
         NO_ROUTE,
         INTERNAL,
         PRECONDITION_FAILED,
+        NO_PERMISSION,
     }
 }
 
