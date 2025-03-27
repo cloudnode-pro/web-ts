@@ -4,3 +4,4 @@ export * from "./EmptyResponse.js";
 export * from "./JsonResponse.js";
 export * from "./Response.js";
 export * from "./TextResponse.js";
+export * from "./ThrowableResponse.js";
