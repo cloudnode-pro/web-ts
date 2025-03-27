@@ -5,6 +5,7 @@ import {Authenticator} from "./auth/Authenticator.js";
 import {Request} from "./Request.js";
 import {EmptyResponse} from "./response/index.js";
 import {Response} from "./response/Response.js";
+import {ThrowableResponse} from "./response/ThrowableResponse.js";
 import {RouteRegistry} from "./routing/RouteRegistry.js";
 import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
 
@@ -89,9 +90,13 @@ class Server<A> extends EventEmitter<Server.Events> {
                 await this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res);
                 return;
             }
+
             if (e instanceof Request.SocketClosedError)
                 return;
-            throw e;
+
+            this.emit("error", e as any);
+            this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, null)._send(res, this);
+            return;
         }
 
         for (const [key, value] of this.globalHeaders)
@@ -107,7 +112,13 @@ class Server<A> extends EventEmitter<Server.Events> {
             response = await this.routes.handle(apiRequest);
         }
         catch (e) {
-            if (e instanceof RouteRegistry.NoRouteError)
+            if (e instanceof ThrowableResponse) {
+                response = e.getResponse();
+                const cause = e.getError();
+                if (cause !== null)
+                    this.emit("error", cause);
+            }
+            else if (e instanceof RouteRegistry.NoRouteError)
                 response = this.errors._get(ServerErrorRegistry.ErrorCodes.NO_ROUTE, apiRequest);
             else {
                 this.emit("error", e as any);
