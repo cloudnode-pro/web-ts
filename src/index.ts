@@ -3,5 +3,6 @@ export * from "./Cookie.js";
 export * from "./Request.js";
 export * from "./Server.js";
 export * from "./ServerErrorRegistry.js";
+export * from "./auth/index.js";
 export * from "./response/index.js";
 export * from "./routing/index.js";

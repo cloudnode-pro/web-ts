@@ -1,12 +1,11 @@
 import http from "node:http";
 import {Cookie} from "../Cookie.js";
 import {Request} from "../Request.js";
-import {Server} from "../Server.js";
 
 /**
  * An outgoing HTTP response.
  */
-export abstract class Response {
+export abstract class Response<A> {
     /**
      * The HTTP response status code to send.
      */
@@ -22,7 +21,7 @@ export abstract class Response {
      * @param statusCode The HTTP response status code to send.
      * @param [headers] The HTTP response headers to send.
      */
-    protected constructor(statusCode: Response["statusCode"], headers: HeadersInit = {}) {
+    protected constructor(statusCode: Response<A>["statusCode"], headers: HeadersInit = {}) {
         this.statusCode = statusCode;
         this.headers = new Headers(headers);
     }
@@ -38,7 +37,7 @@ export abstract class Response {
     /**
      * @internal
      */
-    public _send(...args: Parameters<Response["send"]>): ReturnType<Response["send"]> {
+    public _send(...args: Parameters<Response<A>["send"]>): ReturnType<Response<A>["send"]> {
         return this.send(...args);
     }
 
@@ -46,7 +45,7 @@ export abstract class Response {
      * All (final) headers to send to the client.
      * @internal
      */
-    public allHeaders(res: http.ServerResponse, server: Server, req?: Request) {
+    public allHeaders(res: http.ServerResponse, req?: Request<A>) {
         const headers = new Headers(this.headers);
         if (req !== undefined)
             for (const [key, value] of req._responseHeaders)
@@ -61,18 +60,19 @@ export abstract class Response {
             headers.set("connection", "close");
         else {
             headers.set("connection", "keep-alive");
-            headers.set("keep-alive", "timeout=" + server._keepAliveTimeout);
+            headers.set("keep-alive", "timeout=" + req.server._keepAliveTimeout);
         }
+
         return headers;
     }
 
     /**
      * Set the HTTP response status code and headers.
      */
-    protected writeHead(res: http.ServerResponse, server: Server, req?: Request) {
-        const headers = this.allHeaders(res, server, req);
+    protected writeHead(res: http.ServerResponse, req?: Request<A>) {
+        const headers = this.allHeaders(res, req);
         for (const [key, value] of Array.from(headers.entries())
-            .sort((a, b) => a[0].localeCompare(b[0])))
+            .sort(([a], [b]) => a.localeCompare(b)))
             res.setHeader(key, value);
         res.writeHead(this.statusCode);
     }
@@ -80,5 +80,5 @@ export abstract class Response {
     /**
      * Called once by the server to send the response.
      */
-    protected abstract send(res: http.ServerResponse, server: Server, req?: Request): void | Promise<void>;
+    protected abstract send(res: http.ServerResponse, req?: Request<A>): Promise<void>;
 }

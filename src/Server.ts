@@ -1,6 +1,7 @@
 import EventEmitter from "node:events";
 import http from "node:http";
 import packageJson from "../package.json" with {type: "json"};
+import {Authenticator} from "./auth/Authenticator.js";
 import {Request} from "./Request.js";
 import {EmptyResponse} from "./response/index.js";
 import {Response} from "./response/Response.js";
@@ -12,19 +13,24 @@ import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
  * An HTTP server.
  * @see {@link Server.Events} for events.
  */
-class Server extends EventEmitter<Server.Events> {
+class Server<A> extends EventEmitter<Server.Events> {
     /**
      * Headers sent with every response.
      */
     public readonly globalHeaders: Headers;
+    
     /**
      * This server's route registry.
      */
-    public readonly routes = new RouteRegistry();
+    public readonly routes = new RouteRegistry<A>();
+    
+    /** @internal */
+    public readonly _authenticators: Authenticator<A>[];
+    
     /**
      * This server's error registry.
      */
-    public readonly errors = new ServerErrorRegistry();
+    public readonly errors = new ServerErrorRegistry<A>();
     private readonly server: http.Server;
     private readonly port?: number;
     private readonly copyOrigin: boolean;
@@ -34,7 +40,7 @@ class Server extends EventEmitter<Server.Events> {
      * Create a new HTTP server.
      * @param options Server options.
      */
-    public constructor(options?: Server.Options) {
+    public constructor(options?: Server.Options<A>) {
         super();
         this.server = http.createServer({
             joinDuplicateHeaders: true,
@@ -42,11 +48,12 @@ class Server extends EventEmitter<Server.Events> {
 
         this.globalHeaders = new Headers(options?.globalHeaders);
         if (!this.globalHeaders.has("server"))
-            this.globalHeaders.set("Server", `cldn/${packageJson.version}`);
+            this.globalHeaders.set("Server", `${packageJson.name}/${packageJson.version}`);
 
         this.port = options?.port;
         this.copyOrigin = options?.copyOrigin ?? false;
         this.handleConditionalRequests = options?.handleConditionalRequests ?? true;
+        this._authenticators = options?.authenticators ?? [];
 
         if (this.port !== undefined) this.listen(this.port).then();
 
@@ -101,13 +108,13 @@ class Server extends EventEmitter<Server.Events> {
     }
 
     private async listener(req: http.IncomingMessage, res: http.ServerResponse) {
-        let apiRequest: Request;
+        let apiRequest: Request<A>;
         try {
-            apiRequest = Request.incomingMessage(req);
+            apiRequest = Request.incomingMessage(req, this);
         }
         catch (e) {
             if (e instanceof Request.BadUrlError) {
-                this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res, this);
+                await this.errors._get(ServerErrorRegistry.ErrorCodes.BAD_URL, null)._send(res);
                 return;
             }
 
@@ -115,7 +122,7 @@ class Server extends EventEmitter<Server.Events> {
                 return;
 
             this.emit("error", e as any);
-            this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, null)._send(res, this);
+            await this.errors._get(ServerErrorRegistry.ErrorCodes.INTERNAL, null)._send(res);
             return;
         }
 
@@ -127,7 +134,7 @@ class Server extends EventEmitter<Server.Events> {
             apiRequest._responseHeaders.set("vary", "origin");
         }
 
-        let response: Response;
+        let response: Response<A>;
         try {
             response = await this.routes.handle(apiRequest);
         }
@@ -148,13 +155,13 @@ class Server extends EventEmitter<Server.Events> {
         await this.sendResponse(response, res, apiRequest);
     }
 
-    private async sendResponse(response: Response, res: http.ServerResponse, req: Request): Promise<void> {
+    private async sendResponse(response: Response<A>, res: http.ServerResponse, req: Request<A>): Promise<void> {
         conditional: if (
             this.handleConditionalRequests
             && response.statusCode === 200
             && [Request.Method.GET, Request.Method.HEAD].includes(req.method)
         ) {
-            const responseHeaders = response.allHeaders(res, this, req);
+            const responseHeaders = response.allHeaders(res, req);
             const etag = responseHeaders.get("etag");
             const lastModified = responseHeaders.has("last-modified")
                 ? new Date(responseHeaders.get("last-modified")!)
@@ -166,26 +173,26 @@ class Server extends EventEmitter<Server.Events> {
                 if (!this.getETags(req.headers.get("if-match")!)
                     .filter(t => !t.startsWith("W/"))
                     .includes(etag!))
-                    return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
+                    return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, req);
             }
             else if (req.headers.has("if-unmodified-since")) {
                 if (lastModified === null
                     || lastModified.getTime() > new Date(req.headers.get("if-unmodified-since")!).getTime())
-                    return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, this, req);
+                    return this.errors._get(ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED, req)._send(res, req);
             }
 
             if (req.headers.has("if-none-match")) {
                 if (this.getETags(req.headers.get("if-none-match")!)
                     .includes(etag!))
-                    return new EmptyResponse(responseHeaders, 304)._send(res, this, req);
+                    return new EmptyResponse<A>(responseHeaders, 304)._send(res, req);
             }
             else if (req.headers.has("if-modified-since")) {
                 if (lastModified !== null
                     && lastModified.getTime() <= new Date(req.headers.get("if-modified-since")!).getTime())
-                    return new EmptyResponse(responseHeaders, 304)._send(res, this, req);
+                    return new EmptyResponse<A>(responseHeaders, 304)._send(res, req);
             }
         }
-        response._send(res, this, req);
+        await response._send(res, req);
     }
 
     private getETags(header: string) {
@@ -199,7 +206,7 @@ namespace Server {
     /**
      * Server options
      */
-    export interface Options {
+    export interface Options<A> {
         /**
          * The HTTP listener port. From 1 to 65535. Ports 1–1023 require
          * privileges. If not set, {@link Server#listen|Server.listen()} must be called manually.
@@ -225,6 +232,11 @@ namespace Server {
          * @default true
          */
         readonly handleConditionalRequests?: boolean;
+
+        /**
+         * Authenticators for handling request authentication.
+         */
+        readonly authenticators?: Authenticator<A>[];
     }
 
     /**
