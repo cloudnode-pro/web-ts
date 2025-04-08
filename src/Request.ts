@@ -42,6 +42,11 @@ export class Request<A> {
     public readonly server: Server<A>;
 
     /**
+     * The components of the request URL path name.
+     */
+    public readonly pathComponents: ReadonlyArray<string>;
+
+    /**
      * The parsed request cookies from the {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie|Cookie} request header.
      */
     public readonly cookies: ReadonlyMap<string, string>;
@@ -69,6 +74,11 @@ export class Request<A> {
         this.bodyStream = bodyStream;
         this.ip = ip;
         this.server = server;
+
+        this.pathComponents = this.url.pathname
+            .split("/")
+            .map(decodeURIComponent)
+            .filter(component => component.length > 0);
 
         this.cookies = new Map(
             this.headers.get("cookie")
