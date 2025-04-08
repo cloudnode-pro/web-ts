@@ -59,6 +59,7 @@ export class Request<A> {
      * @param bodyStream See {@link Request#bodyStream}.
      * @param ip See {@link Request#ip}.
      * @param server See {@link Request#server}.
+     * @throws {@link !URIError} If the request URL path name contains an invalid URI escape sequence.
      */
     public constructor(
         method: Request<A>["method"],
@@ -123,7 +124,14 @@ export class Request<A> {
         if (remoteAddress === undefined)
             throw new Request.SocketClosedError();
 
-        return new Request<A>(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress), server);
+        try {
+            return new Request<A>(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress), server);
+        }
+        catch (e) {
+            if (e instanceof URIError)
+                throw new Request.BadUrlError(incomingMessage.url);
+            throw e;
+        }
     }
 
     /**
@@ -251,7 +259,7 @@ export class Request<A> {
 export namespace Request {
     export class BadUrlError extends Error {
         public constructor(public readonly path: string | undefined) {
-            super(`${path} is not a valid URL.`);
+            super(`${path} is not a valid URL or contains invalid URI escape sequences.`);
         }
     }
 
