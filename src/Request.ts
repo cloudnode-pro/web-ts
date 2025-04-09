@@ -42,6 +42,11 @@ export class Request<A> {
     public readonly server: Server<A>;
 
     /**
+     * The components of the request URL path name.
+     */
+    public readonly pathComponents: ReadonlyArray<string>;
+
+    /**
      * The parsed request cookies from the {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie|Cookie} request header.
      */
     public readonly cookies: ReadonlyMap<string, string>;
@@ -54,6 +59,7 @@ export class Request<A> {
      * @param bodyStream See {@link Request#bodyStream}.
      * @param ip See {@link Request#ip}.
      * @param server See {@link Request#server}.
+     * @throws {@link !URIError} If the request URL path name contains an invalid URI escape sequence.
      */
     public constructor(
         method: Request<A>["method"],
@@ -69,6 +75,11 @@ export class Request<A> {
         this.bodyStream = bodyStream;
         this.ip = ip;
         this.server = server;
+
+        this.pathComponents = this.url.pathname
+            .split("/")
+            .map(decodeURIComponent)
+            .filter(component => component.length > 0);
 
         this.cookies = new Map(
             this.headers.get("cookie")
@@ -113,7 +124,14 @@ export class Request<A> {
         if (remoteAddress === undefined)
             throw new Request.SocketClosedError();
 
-        return new Request<A>(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress), server);
+        try {
+            return new Request<A>(incomingMessage.method as Request.Method, new URL(url), headers, incomingMessage, IPAddress.fromString(remoteAddress), server);
+        }
+        catch (e) {
+            if (e instanceof URIError)
+                throw new Request.BadUrlError(incomingMessage.url);
+            throw e;
+        }
     }
 
     /**
@@ -241,7 +259,7 @@ export class Request<A> {
 export namespace Request {
     export class BadUrlError extends Error {
         public constructor(public readonly path: string | undefined) {
-            super(`${path} is not a valid URL.`);
+            super(`${path} is not a valid URL or contains invalid URI escape sequences.`);
         }
     }
 
