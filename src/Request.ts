@@ -32,6 +32,8 @@ export class Request<A> {
      * `Host` request header. If that is not specified either, will use the `HOST` environment variable or default to
      * `localhost`.
      *
+     * In short, this is, as closely as possible, the exact URL address the client requested.
+     *
      * If basic authentication is available to this request via headers, the `username` and `password` fields are
      * available in the {@link URL} object.
      */
