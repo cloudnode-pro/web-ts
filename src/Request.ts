@@ -4,7 +4,6 @@ import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
 import {Authenticator} from "./auth/Authenticator.js";
 import {Authorisation} from "./auth/Authorisation.js";
-import {AuthenticatedRequest} from "./auth/AuthenticatedRequest.js";
 import {Server} from "./Server.js";
 
 /**
@@ -156,24 +155,6 @@ export class Request<A> {
         const authenticator = this.server._authenticators.find(a => a.canAuthenticate(this));
         if (authenticator === undefined) return null;
         return await authenticator.authenticate(this);
-    }
-
-    /**
-     * Attempt to authenticate this request with one of the {@link Server}’s {@link Authenticator}s.
-     * @returns `null` if the request lacks authorisation information.
-     */
-    public async authenticate(): Promise<AuthenticatedRequest<A> | null> {
-        const authorisation = await this.getAuthorisation();
-        if (authorisation === null) return null;
-        return new AuthenticatedRequest<A>(
-            authorisation,
-            this.method,
-            this.url,
-            this.headers,
-            this.bodyStream,
-            this.ip,
-            this.server,
-        );
     }
 
     /**
