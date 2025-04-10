@@ -28,8 +28,9 @@ export class Request<A> {
     /**
      * The address requested by the client (first peer). If the request originated from a trusted proxy, this address
      * will be constructed based on protocol and host provided by the proxy. If the proxy does not specify protocol,
-     * `http:` will be used as a default. If the proxy does not specify host, will use the `HOST` environment variable
-     * or default to `localhost`. If the proxy is not trusted, will be the same as {@link Request#originalUrl}.
+     * `http:` will be used as a default. If the proxy does not specify host (or the proxy is not trusted), will use the
+     * `Host` request header. If that is not specified either, will use the `HOST` environment variable or default to
+     * `localhost`.
      *
      * If basic authentication is available to this request via headers, the `username` and `password` fields are
      * available in the {@link URL} object.
@@ -40,14 +41,6 @@ export class Request<A> {
      * The request headers.
      */
     public readonly headers: Readonly<Headers>;
-
-    /**
-     * The `Host` header provided by the client (first peer). If the request originated from a trusted proxy, this
-     * will be obtained from the proxy. Otherwise, if the proxy does not specify the original `Host` header, or the
-     * proxy is untrusted, this will be the same as the `Host` header in {@link Request#headers} (and `null` if not
-     * set).
-     */
-    public readonly host: string | null;
 
     /**
      * Request body readable stream.
@@ -87,7 +80,6 @@ export class Request<A> {
      * @param originalUrl See {@link Request#originalUrl}.
      * @param url See {@link Request#url}.
      * @param headers See {@link Request#headers}.
-     * @param host See {@link Request#host}.
      * @param bodyStream See {@link Request#bodyStream}.
      * @param originalIp See {@link Request#originalIp}.
      * @param ip See {@link Request#ip}.
@@ -99,7 +91,6 @@ export class Request<A> {
         originalUrl: Request<A>["originalUrl"],
         url: Request<A>["url"],
         headers: Request<A>["headers"],
-        host: Request<A>["host"],
         bodyStream: Request<A>["bodyStream"],
         originalIp: Request<A>["originalIp"],
         ip: Request<A>["ip"],
@@ -109,7 +100,6 @@ export class Request<A> {
         this.originalUrl = originalUrl;
         this.url = url;
         this.headers = headers;
-        this.host = host;
         this.bodyStream = bodyStream;
         this.originalIp = originalIp;
         this.ip = ip;
@@ -154,7 +144,6 @@ export class Request<A> {
         const proxy = isTrustedProxy ? this.getClientInfoFromTrustedProxy(headers) : {};
 
         const clientIp = proxy.ip ?? ip;
-        const clientHost = proxy.host ?? headers.get("host");
 
         const auth =
             incomingMessage.headers.authorization
@@ -173,13 +162,16 @@ export class Request<A> {
         if (proxy.protocol !== undefined)
             clientUrl.protocol = proxy.protocol + ":";
 
+        const clientHost = proxy.host ?? headers.get("host");
+        if (clientHost !== null)
+            clientUrl.host = clientHost;
+
         try {
             return new Request<A>(
                 incomingMessage.method as Request.Method,
                 new URL(originalUrl),
                 clientUrl,
                 headers,
-                clientHost,
                 incomingMessage,
                 ip,
                 clientIp,
@@ -301,7 +293,6 @@ export class Request<A> {
             this.originalUrl,
             this.url,
             this.headers,
-            this.host,
             this.bodyStream,
             this.originalIp,
             this.ip,
