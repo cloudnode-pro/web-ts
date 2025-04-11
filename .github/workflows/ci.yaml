@@ -137,7 +137,9 @@ jobs:
         run: npm version ${{ github.event.release.tag_name }} --git-tag-version=false
 
       - name: Copy package.json to build package
-        run: cp package.json package/package
+        run: |-
+          cp package.json package/package
+          cp package.json package/package/dist
 
       - name: Publish release to NPM
         if: "!github.event.release.prerelease"

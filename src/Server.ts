@@ -1,7 +1,7 @@
 import {Network} from "@cldn/ip";
 import EventEmitter from "node:events";
 import http from "node:http";
-import packageJson from "../package.json" with {type: "json"};
+import packageJson from "./package.json" with {type: "json"};
 import {Authenticator} from "./auth/Authenticator.js";
 import {Request} from "./Request.js";
 import {EmptyResponse} from "./response/index.js";
