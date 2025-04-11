@@ -4,6 +4,11 @@
   "description": "Class-based Node.js web server",
   "main": "dist/src/index.js",
   "type": "module",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/*.json"
+  ],
   "scripts": {
     "prebuild": "npm run gen:indices",
     "build": "tsc",
