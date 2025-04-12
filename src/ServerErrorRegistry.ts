@@ -27,6 +27,9 @@ class ServerErrorRegistry<A> {
 
             [ServerErrorRegistry.ErrorCodes.NO_PERMISSION]:
                 new TextResponse("You do not have the necessary permissions to perform this action.", 403),
+
+            [ServerErrorRegistry.ErrorCodes.UNAUTHORISED]:
+                new TextResponse("Authentication information was either absent or invalid.", 401),
         };
     }
 
@@ -57,6 +60,7 @@ namespace ServerErrorRegistry {
         INTERNAL,
         PRECONDITION_FAILED,
         NO_PERMISSION,
+        UNAUTHORISED,
     }
 }
 
