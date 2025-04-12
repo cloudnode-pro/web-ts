@@ -18,7 +18,8 @@ export class StreamedResponse<A> extends Response<A> {
     public constructor(stream: NodeJS.ReadableStream, statusCode = 200, headers?: HeadersInit) {
         super(statusCode, headers);
         this.stream = stream;
-        if (!this.headers.has("transfer-encoding")) this.headers.set("transfer-encoding", "chunked");
+        if (!this.headers.has("transfer-encoding"))
+            this.headers.set("transfer-encoding", "chunked");
     }
 
     protected override async send(res: http.ServerResponse, req?: Request<A>): Promise<void> {
