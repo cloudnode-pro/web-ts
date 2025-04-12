@@ -4,8 +4,10 @@ import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
 import {Authenticator} from "./auth/Authenticator.js";
 import {Authorisation} from "./auth/Authorisation.js";
-import {AuthenticatedRequest} from "./auth/AuthenticatedRequest.js";
+import {Permission} from "./auth/index.js";
+import {ThrowableResponse} from "./response/index.js";
 import {Server} from "./Server.js";
+import {ServerErrorRegistry} from "./ServerErrorRegistry.js";
 
 /**
  * An incoming HTTP request from a connected client.
@@ -159,24 +161,6 @@ export class Request<A> {
     }
 
     /**
-     * Attempt to authenticate this request with one of the {@link Server}’s {@link Authenticator}s.
-     * @returns `null` if the request lacks authorisation information.
-     */
-    public async authenticate(): Promise<AuthenticatedRequest<A> | null> {
-        const authorisation = await this.getAuthorisation();
-        if (authorisation === null) return null;
-        return new AuthenticatedRequest<A>(
-            authorisation,
-            this.method,
-            this.url,
-            this.headers,
-            this.bodyStream,
-            this.ip,
-            this.server,
-        );
-    }
-
-    /**
      * Returns a boolean value that declares whether the body has been read yet.
      */
     public bodyUsed(): boolean {
@@ -247,6 +231,33 @@ export class Request<A> {
      */
     public async text(): Promise<string> {
         return (await this.blob()).text();
+    }
+
+    /**
+     * Require that authorisation can be obtained from this request.
+     * @throws {@link ThrowableResponse} of {@link ServerErrorRegistry.ErrorCodes.UNAUTHORISED} if authorisation cannot
+     * be obtained.
+     */
+    public async auth(): Promise<Authorisation<A>>;
+
+    /**
+     * Require that authorisation can be obtained from this request and that the given (requested) permission(s) are
+     * ALL within the scope of the authorisation.
+     * @param permissions The requested permissions.
+     * @throws {@link ThrowableResponse} of {@link ServerErrorRegistry.ErrorCodes.UNAUTHORISED} if authorisation cannot
+     * be obtained.
+     * @throws {@link ThrowableResponse} of {@link ServerErrorRegistry.ErrorCodes.NO_PERMISSION} if the authorisation
+     * lacks any of the requested permissions.
+     */
+    public async auth(...permissions: [Permission, ...Permission[]]): Promise<Authorisation<A>>;
+
+    public async auth(...permissions: Permission[]): Promise<Authorisation<A>> {
+        const authorisation = await this.getAuthorisation();
+        if (authorisation === null)
+            throw new ThrowableResponse(this.server.errors._get(ServerErrorRegistry.ErrorCodes.UNAUTHORISED, null));
+        if (permissions.length > 0 && !authorisation.hasAll(permissions))
+            throw new ThrowableResponse(this.server.errors._get(ServerErrorRegistry.ErrorCodes.NO_PERMISSION, null));
+        return authorisation;
     }
 
     /**

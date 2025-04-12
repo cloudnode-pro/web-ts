@@ -13,7 +13,7 @@ export interface Authenticator<A extends any> {
     canAuthenticate(request: Request<A>): boolean;
 
     /**
-     * Authenticate the given request. If authenticate fails, e.g. due to missing or invalid information, such as
+     * Authenticate the given request. If authentication fails, e.g. due to missing or invalid information, such as
      * credentials, the authenticator should return `null`, which can be communicated to the client by implementing
      * applications using a 401 status response.
      * @param request
