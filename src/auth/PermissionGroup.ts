@@ -29,6 +29,17 @@ export class PermissionGroup implements Permissible, Iterable<Permission> {
     }
 
     /**
+     * Check that the group has all the specified permissions.
+     * @param permissions The permissions to check.
+     */
+    public hasAll(permissions: Iterable<Permission>): boolean {
+        for (const permission of permissions)
+            if (!this.has(permission))
+                return false;
+        return true;
+    }
+
+    /**
      * An iterator over the permissions in this group.
      */
     public *[Symbol.iterator]() {
