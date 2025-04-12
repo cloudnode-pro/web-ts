@@ -14,10 +14,12 @@ export abstract class BufferResponse<A> extends Response<A> {
     protected override async send(res: http.ServerResponse, req?: Request<A>): Promise<void> {
         const buffer = await this.readBuffer();
         if (req !== undefined) {
-            if (res.chunkedEncoding)
-                req._responseHeaders.set("transfer-encoding", "chunked");
-            else
-                req._responseHeaders.set("content-length", buffer.byteLength.toString());
+            if (res.chunkedEncoding) {
+                if (!this.headers.has("transfer-encoding"))
+                    this.headers.set("transfer-encoding", "chunked");
+            }
+            else if (!this.headers.has("content-length"))
+                this.headers.set("content-length", buffer.byteLength.toString());
         }
         this.writeHead(res, req);
         res.end(buffer);
