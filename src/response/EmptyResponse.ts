@@ -16,8 +16,8 @@ export class EmptyResponse<A> extends Response<A> {
     }
 
     protected override async send(res: http.ServerResponse, req?: Request<A>): Promise<void> {
-        if (req !== undefined)
-            req._responseHeaders.set("content-length", "0");
+        if (!this.headers.has("content-length"))
+            this.headers.set("content-length", "0");
         this.writeHead(res, req);
         res.end();
     }
