@@ -19,6 +19,8 @@ export class TextResponse<A> extends BufferResponse<A> {
     public constructor(text: string, statusCode = 200, headers?: HeadersInit) {
         super(statusCode, headers);
         this.text = text;
+        if (!this.headers.has("content-type"))
+            this.headers.set("content-type", "text/plain");
     }
 
     public override readBuffer() {
