@@ -1,7 +1,6 @@
 import {IPAddress, IPv4, IPv6} from "@cldn/ip";
 import {Multipart} from "multipart-ts";
 import http, {OutgoingHttpHeader} from "node:http";
-import stream from "node:stream";
 import {Authenticator} from "./auth/Authenticator.js";
 import {Authorisation} from "./auth/Authorisation.js";
 import {Permission} from "./auth/index.js";
@@ -31,7 +30,7 @@ export class Request<A> {
     /**
      * Request body readable stream.
      */
-    public readonly bodyStream: stream.Readable;
+    public readonly bodyStream: http.IncomingMessage;
 
     /**
      * IP address of request sender.
@@ -164,7 +163,7 @@ export class Request<A> {
      * Returns a boolean value that declares whether the body has been read yet.
      */
     public bodyUsed(): boolean {
-        return this.bodyStream.readable && !this.bodyStream.readableDidRead;
+        return this.bodyStream.readable && !this.bodyStream.complete;
     }
 
     /**
