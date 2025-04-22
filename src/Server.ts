@@ -1,3 +1,4 @@
+import {Network} from "@cldn/ip";
 import EventEmitter from "node:events";
 import http from "node:http";
 import packageJson from "./package.json" with {type: "json"};
@@ -35,6 +36,10 @@ class Server<A> extends EventEmitter<Server.Events> {
     private readonly port?: number;
     private readonly copyOrigin: boolean;
     private readonly handleConditionalRequests: boolean;
+    /**
+     * The network of remote addresses of proxies to trust/
+     */
+    public readonly trustedProxies: Network;
 
     /**
      * Create a new HTTP server.
@@ -54,6 +59,7 @@ class Server<A> extends EventEmitter<Server.Events> {
         this.copyOrigin = options?.copyOrigin ?? false;
         this.handleConditionalRequests = options?.handleConditionalRequests ?? true;
         this._authenticators = options?.authenticators ?? [];
+        this.trustedProxies = options?.trustedProxies ?? new Network();
 
         if (this.port !== undefined) this.listen(this.port).then();
 
@@ -237,6 +243,12 @@ namespace Server {
          * Authenticators for handling request authentication.
          */
         readonly authenticators?: Authenticator<A>[];
+
+        /**
+         * The network of trusted proxies. If specified, headers such as `Forwarded`, `X-Forwarded-For`, and `X-Real-IP`
+         * will be trusted and automatically processed.
+         */
+        readonly trustedProxies?: Network;
     }
 
     /**
