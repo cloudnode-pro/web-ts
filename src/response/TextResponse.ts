@@ -1,13 +1,12 @@
+import http from "node:http";
+import {Request} from "../Request.js";
 import {BufferResponse} from "./BufferResponse.js";
 
 /**
  * An HTTP response with a plain text body.
  */
 export class TextResponse<A> extends BufferResponse<A> {
-    /**
-     * The plain text body of the response.
-     */
-    protected readonly text: string;
+    protected override readonly buffer: Uint8Array;
     private readonly encoder = new TextEncoder();
 
     /**
@@ -18,12 +17,13 @@ export class TextResponse<A> extends BufferResponse<A> {
      */
     public constructor(text: string, statusCode = 200, headers?: HeadersInit) {
         super(statusCode, headers);
-        this.text = text;
-        if (!this.headers.has("content-type"))
-            this.headers.set("content-type", "text/plain");
+        this.buffer = this.encoder.encode(text);
     }
 
-    public override readBuffer() {
-        return this.encoder.encode(this.text);
+    public override allHeaders(res: http.ServerResponse, req?: Request<A>): Headers {
+        const headers = super.allHeaders(res, req);
+        if (!headers.has("content-type"))
+            headers.set("content-type", "text/plain");
+        return headers;
     }
 }
