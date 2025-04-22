@@ -67,7 +67,8 @@ export abstract class Response<A> {
     }
 
     /**
-     * Set the HTTP response status code and headers.
+     * Set and send the HTTP response status code and headers. No more headers can be sent after this.
+     * @final
      */
     protected writeHead(res: http.ServerResponse, req?: Request<A>) {
         const headers = this.allHeaders(res, req);

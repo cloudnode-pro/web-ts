@@ -261,7 +261,9 @@ export class Request<A> {
     }
 
     /**
-     * Response headers that the Response to this request should include.
+     * Set in advance response headers that the Response to this request should include. Do not use if a Response
+     * context is available (use {@link Response#headers} instead). Responses cannot see these headers and may overwrite
+     * them if there is a collision.
      * @internal
      */
     public _responseHeaders = new Headers();

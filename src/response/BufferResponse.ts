@@ -9,17 +9,23 @@ export abstract class BufferResponse<A> extends Response<A> {
     /**
      * Fetch the buffer to send in the response body.
      */
-    protected abstract readBuffer(): Uint8Array | Promise<Uint8Array>;
+    protected abstract readonly buffer: Uint8Array;
+
+    public override allHeaders(res: http.ServerResponse, req?: Request<A>) {
+        const headers = super.allHeaders(res, req);
+        if (req !== undefined) {
+            if (res.chunkedEncoding) {
+                if (!headers.has("transfer-encoding"))
+                    headers.set("transfer-encoding", "chunked");
+            }
+            else if (!headers.has("content-length"))
+                headers.set("content-length", this.buffer.byteLength.toString());
+        }
+        return headers;
+    }
 
     protected override async send(res: http.ServerResponse, req?: Request<A>): Promise<void> {
-        const buffer = await this.readBuffer();
-        if (req !== undefined) {
-            if (res.chunkedEncoding)
-                req._responseHeaders.set("transfer-encoding", "chunked");
-            else
-                req._responseHeaders.set("content-length", buffer.byteLength.toString());
-        }
         this.writeHead(res, req);
-        res.end(buffer);
+        res.end(this.buffer);
     }
 }
