@@ -14,19 +14,19 @@ class ServerErrorRegistry<A> {
     public constructor() {
         this.responses = {
             [ServerErrorRegistry.ErrorCodes.BAD_URL]:
-                new TextResponse("Bad request URL.", 400),
+                new TextResponse("Invalid request URL.", 400),
 
             [ServerErrorRegistry.ErrorCodes.NO_ROUTE]:
-                new TextResponse("No route in this registry matches the request.", 404),
+                new TextResponse("No route matched the request.", 404),
 
             [ServerErrorRegistry.ErrorCodes.INTERNAL]:
-                new TextResponse("An internal error occurred.", 500),
+                new TextResponse("An unexpected internal server error occurred.", 500),
 
             [ServerErrorRegistry.ErrorCodes.PRECONDITION_FAILED]:
-                new TextResponse("Precondition failed.", 412),
+                new TextResponse("One or more preconditions were not met.", 412),
 
             [ServerErrorRegistry.ErrorCodes.NO_PERMISSION]:
-                new TextResponse("You do not have permission to perform this action.", 403),
+                new TextResponse("You do not have the necessary permissions to perform this action.", 403),
 
             [ServerErrorRegistry.ErrorCodes.UNAUTHORISED]:
                 new TextResponse("Authentication information was either absent or invalid.", 401),

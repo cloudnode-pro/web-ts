@@ -3,5 +3,6 @@ export * from "./BufferResponse.js";
 export * from "./EmptyResponse.js";
 export * from "./JsonResponse.js";
 export * from "./Response.js";
+export * from "./StreamedResponse.js";
 export * from "./TextResponse.js";
 export * from "./ThrowableResponse.js";
