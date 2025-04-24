@@ -30,7 +30,7 @@ export class Request<A> {
     /**
      * Request body readable stream.
      */
-    public readonly bodyStream: http.IncomingMessage;
+    public readonly rawRequest: http.IncomingMessage;
 
     /**
      * IP address of request sender.
@@ -57,7 +57,7 @@ export class Request<A> {
      * @param method See {@link Request#method}.
      * @param url See {@link Request#url}.
      * @param headers See {@link Request#headers}.
-     * @param bodyStream See {@link Request#bodyStream}.
+     * @param rawRequest See {@link Request#rawRequest}.
      * @param ip See {@link Request#ip}.
      * @param server See {@link Request#server}.
      * @throws {@link !URIError} If the request URL path name contains an invalid URI escape sequence.
@@ -66,14 +66,14 @@ export class Request<A> {
         method: Request<A>["method"],
         url: Request<A>["url"],
         headers: Request<A>["headers"],
-        bodyStream: Request<A>["bodyStream"],
+        rawRequest: Request<A>["rawRequest"],
         ip: Request<A>["ip"],
         server: Request<A>["server"]
     ) {
         this.method = method;
         this.url = url;
         this.headers = headers;
-        this.bodyStream = bodyStream;
+        this.rawRequest = rawRequest;
         this.ip = ip;
         this.server = server;
 
@@ -163,7 +163,7 @@ export class Request<A> {
      * Returns a boolean value that declares whether the body has been read yet.
      */
     public bodyUsed(): boolean {
-        return this.bodyStream.readable && !this.bodyStream.complete;
+        return this.rawRequest.readable && !this.rawRequest.complete;
     }
 
     /**
@@ -181,7 +181,7 @@ export class Request<A> {
     public async blob(): Promise<Blob> {
         if (this.bodyUsed()) throw new Request.BodyAlreadyConsumedError();
         const chunks: Uint8Array[] = [];
-        for await (const chunk of this.bodyStream)
+        for await (const chunk of this.rawRequest)
             chunks.push(chunk);
         return new Blob(chunks, {type: this.headers.get("Content-Type") ?? undefined});
     }
