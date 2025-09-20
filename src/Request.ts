@@ -1,4 +1,4 @@
-import {IPAddress, IPv4, IPv6} from "@cldn/ip";
+import {IP, IPAddress, IPv4, IPv6} from "@cldn/ip";
 import {Multipart} from "multipart-ts";
 import http, {OutgoingHttpHeader} from "node:http";
 import stream from "node:stream";
@@ -54,14 +54,14 @@ export class Request<A> {
     /**
      * The IP address of the request sender (last peer). This might be a proxy.
      */
-    public readonly originalIp: IPv4 | IPv6;
+    public readonly originalIp: IP;
 
     /**
      * IP address of client (first peer). If the request originated from a trusted proxy, this will be the client IP
      * indicated by the proxy. Otherwise, if the proxy specifies no client IP, or the proxy is untrusted, this will be
      * the proxy IP and equivalent to {@link Request#originalIp}.
      */
-    public readonly ip: IPv4 | IPv6;
+    public readonly ip: IP;
 
     /**
      * The {@link Server} from which this request was received.
@@ -141,7 +141,7 @@ export class Request<A> {
         if (remoteAddress === undefined)
             throw new Request.SocketClosedError();
         const ip = IPAddress.fromString(remoteAddress);
-        const isTrustedProxy = server.trustedProxies.has(ip);
+        const isTrustedProxy = server.trustedProxies.contains(ip);
 
         const headers = Request.headersFromNodeDict(incomingMessage.headers);
 
@@ -207,11 +207,11 @@ export class Request<A> {
      * Extract client IP, protocol, and host, from the information provided by a trusted proxy.
      * @param headers The HTTP headers sent by a trusted proxy.
      */
-    private static getClientInfoFromTrustedProxy(headers: Headers): {ip?: IPv4 | IPv6, host?: string, protocol?: "http" | "https"} {
+    private static getClientInfoFromTrustedProxy(headers: Headers): {ip?: IP, host?: string, protocol?: "http" | "https"} {
         if (headers.has("forwarded")) {
             const forwarded = headers.get("forwarded")!.split(",")[0]!.trim();
             const forwardedPairs = forwarded.split(";");
-            let ip: IPv4 | IPv6 | undefined = undefined;
+            let ip: IP | undefined = undefined;
             let host: string | undefined = undefined;
             let protocol: "http" | "https" | undefined = undefined;
             for (const pair of forwardedPairs) {
@@ -254,7 +254,7 @@ export class Request<A> {
             return {ip, host, protocol};
         }
 
-        let ip: IPv4 | IPv6 | undefined = undefined;
+        let ip: IP | undefined = undefined;
         if (headers.has("x-forwarded-for")) {
             const address = headers.get("x-forwarded-for")!.split(",")[0]!;
             ip = IPAddress.fromString(address.trim());
