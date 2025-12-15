@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/cloudnode-pro/web-ts#readme",
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/node": "^25.0.2",
     "typedoc": "^0.28.0",
     "typedoc-plugin-mdn-links": "^5.0.1",
     "typescript": "^5.8.2"
