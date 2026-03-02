@@ -93,7 +93,7 @@ jobs:
         run: npm pack
 
       - name: Upload package artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: package
           path: cldn-web-ts-0.0.0-dev.tgz
